@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grok Imagen Prompt Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                    colors: {
+                        grok: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            900: '#134e4a',
+                            950: '#042f2e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        /* ローディングスピナーのアニメーション */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* JSONのシンタックスハイライト風ベースカラー */
+        .json-string { color: #a7f3d0; }
+        .json-key { color: #93c5fd; }
+        .json-boolean { color: #fca5a5; }
+        .json-null { color: #d8b4fe; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="sparkles" class="text-grok-500 w-6 h-6"></i>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
+            </div>
+            
+            <!-- API Key Management -->
+            <div id="auth-container" class="flex items-center gap-4">
+                <div id="api-key-input-area" class="flex items-center gap-2 transition-all duration-300">
+                    <input type="password" id="api-key-input" placeholder="Gemini API Key" 
+                        class="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 w-48 placeholder-slate-500">
+                    <button id="save-key-btn" class="bg-grok-600 hover:bg-grok-500 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors">保存</button>
+                </div>
+                <div id="logged-in-area" class="hidden items-center gap-4">
+                    <span class="text-sm text-grok-500 flex items-center gap-1">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> APIキー設定済
+                    </span>
+                    <button id="logout-btn" class="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> 削除
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rate Limit Progress Bar -->
+        <div class="w-full h-1 bg-slate-800 relative group cursor-help" title="API使用制限: 1分間に5回まで">
+            <div id="rate-limit-bar" class="h-full bg-grok-500 transition-all duration-500 ease-in-out w-0"></div>
+            <!-- Tooltip -->
+            <div class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-xs py-1 px-2 rounded shadow-lg pointer-events-none z-50 flex items-center gap-2">
+                <span id="rate-limit-text">0 / 5</span>
+                <span id="rate-limit-reset" class="text-slate-400"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Input Area (Col Span 4) -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm">
+                <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                    <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i>
+                    描きたい画像のイメージ
+                </label>
+                <textarea id="prompt-input" rows="4" 
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
+                    placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
+                
+                <!-- Retry / Error Status Area -->
+                <div id="status-area" class="mt-3 hidden">
+                    <div id="retry-message" class="flex items-center gap-2 text-amber-400 bg-amber-400/10 border border-amber-400/20 p-2.5 rounded-lg text-sm">
+                        <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
+                        <span id="retry-text">API制限のため再試行中...</span>
+                    </div>
+                    <div id="error-message" class="hidden mt-2 flex items-start gap-2 text-red-400 bg-red-400/10 border border-red-400/20 p-2.5 rounded-lg text-sm">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+                        <span id="error-text">エラーが発生しました。</span>
+                    </div>
+                </div>
+
+                <button id="generate-btn" disabled
+                    class="mt-4 w-full bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
+                    <i data-lucide="zap" class="w-4 h-4"></i>
+                    <span>プロンプトを生成</span>
+                </button>
+                <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
+            </div>
+
+            <!-- Hint Card -->
+            <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-400">
+                <h3 class="font-medium text-slate-300 flex items-center gap-2 mb-2">
+                    <i data-lucide="info" class="w-4 h-4"></i> 使い方
+                </h3>
+                <ul class="list-disc list-inside space-y-1 ml-1">
+                    <li>短い日本語でイメージを伝えてください。</li>
+                    <li>AIがGrok Imagenに最適な詳細な英語プロンプト（JSON/Text）に自動拡張します。</li>
+                    <li>生成されたテキストをコピーしてGrokに貼り付けてください。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Column: Output Area (Col Span 8) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            
+            <!-- Explanation Block -->
+            <div id="explanation-container" class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm hidden opacity-0 transition-opacity duration-500">
+                <h2 class="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+                    <i data-lucide="message-square-text" class="w-4 h-4"></i> AIによる解説・補完内容
+                </h2>
+                <p id="explanation-text" class="text-slate-200 leading-relaxed"></p>
+            </div>
+
+            <!-- Plain Text Prompts Block (English & Japanese) -->
+            <div id="plain-text-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden opacity-0 transition-opacity duration-500">
+                <!-- English Prompt -->
+                <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
+                    <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="text" class="w-4 h-4 text-slate-400"></i>
+                            <span class="text-xs font-medium text-slate-300">English Prompt</span>
+                        </div>
+                        <button id="copy-en-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                            <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-en-icon"></i>
+                            <span id="copy-en-text">コピー</span>
+                        </button>
+                    </div>
+                    <div class="p-4 overflow-auto flex-grow max-h-[300px]">
+                        <p id="english-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+
+                <!-- Japanese Prompt -->
+                <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
+                    <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="languages" class="w-4 h-4 text-slate-400"></i>
+                            <span class="text-xs font-medium text-slate-300">Japanese Prompt</span>
+                        </div>
+                        <button id="copy-ja-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                            <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-ja-icon"></i>
+                            <span id="copy-ja-text">コピー</span>
+                        </button>
+                    </div>
+                    <div class="p-4 overflow-auto flex-grow max-h-[300px]">
+                        <p id="japanese-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JSON Output Block -->
+            <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col flex-grow relative">
+                
+                <!-- Overlay Initial State -->
+                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 transition-opacity duration-300">
+                    <i data-lucide="code-2" class="w-12 h-12 text-slate-600 mb-3"></i>
+                    <p class="text-slate-400">生成されたプロンプトがここに表示されます</p>
+                </div>
+
+                <!-- Header of Code Block -->
+                <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></span>
+                        <span class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></span>
+                        <span class="ml-2 text-xs font-mono text-slate-400">grok_prompt.json</span>
+                    </div>
+                    <button id="copy-json-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
+                        <span id="copy-json-text">コピー</span>
+                    </button>
+                </div>
+
+                <!-- Code Content -->
+                <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
+                    <pre><code id="json-output" class="font-mono text-sm leading-relaxed block text-slate-300"></code></pre>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // --- Configuration & Constants ---
+        const MODEL_NAME = "gemini-2.5-flash-lite";
+        const STORAGE_KEY = 'gemini_api_key_grok_gen';
+        const RATE_LIMIT_KEY = 'grok_gen_rate_limit';
+        const MAX_REQUESTS = 5;
+        const TIME_WINDOW_MS = 60 * 1000; // 1 minute
+
+        // System Instruction (Master Prompt Engineering for Photorealism)
+        const SYSTEM_INSTRUCTION = `
+あなたは世界トップクラスの「AI画像生成プロンプトエンジニア」および「プロのフォトグラファー」です。
+ユーザーから渡される短い日本語のアイデアを、Grok Imagen等で最高品質の「超リアルな実写画像（Aggressive Realism）」を出力するための、極めて詳細でリッチな英語プロンプトに拡張・翻訳してください。
+
+【実写（Photorealism）を生み出すための5つの絶対法則】
+単なる「綺麗な絵」ではなく、「現実に存在する写真」にするため、以下の要素を徹底的に組み込んでください。
+
+1. カメラとレンズの物理的特性（Photography）
+- 機材の限界を描写する: "smartphone candid snapshot", "direct flash CCD", "high ISO vibe" など、あえてチープな機材感を入れる。
+- 光学的な不完全さ: "slight wide-angle distortion"（広角の歪み）, "compression artifacts"（圧縮ノイズ）, "mild grain/noise"（粒子感）, "motion blur" を必ず適度に含める。
+- ライティング: "harsh direct frontal flash"（強い正面フラッシュ）や "soft indoor ambient" など、光源の方向と質を具体的に指定し、スタジオライティング（studio lighting）は避ける。
+
+2. 肌とメイクの生々しさ（Skin & Makeup）
+- CG感の排除: "perfect skin" は避け、"smooth but real", "faint pores"（微かな毛穴）, "soft velvet-like surface", "fresh skincare slip"（スキンケア後の滑らかさ）を指定する。
+- 光の反射: "specular highlights on forehead, cheekbones", "brightly illuminated by direct flash" など、肌の油分や水分によるテカリ（ハイライト）を記述する。
+- メイクの具体性: "glass-skin base", "subtle pout with hydrated lips", "natural soft glam" など、美容用語を用いてリアルな人間味を出す。
+
+3. 構図と環境の「雑然さ」（Authenticity & Background）
+- 不完全な構図: "steep top-down angle", "slight dutch tilt", "messy framing", "slightly off-center" など、偶然撮れたようなアングルを指定する。
+- 生活感・背景: "rumpled bed sheets"（シワの寄ったシーツ）, "messy bed", "scattered clothes" など、空間が整いすぎていないことを強調する。
+
+4. 服装と髪の「崩れ」（Clothing & Hair）
+- 意図的な乱れ: "straps slipped down to the upper arms (intentional)", "slightly messy from movement", "a few flyaways"（アホ毛/後れ毛）など、動きや重力を感じさせるシワ・崩れを描写する。
+- 素材感: "soft fabric folds", "delicate lace texture", "slight sheen on stockings" など、生地が光をどう反射するかを指定する。
+
+5. 感情と文脈（Vibe & Story）
+- 写真の前後の文脈: "It felt like a pause after a ride", "caught in the middle of the night" など、なぜその写真が撮られたかのストーリーを付与する。
+- 繊細な表情: "subtle seriousness", "quiet, intimate, slightly dangerous", "tongue sticking out slightly" など、微細な筋肉の動きや感情を言語化する。
+
+【出力要件】
+- ユーザーの指示がアニメ調を指定していない限り、デフォルトで上記法則に従った「圧倒的な実写」として解釈すること。
+- 出力は必ず指定されたJSONスキーマに完全に従い、各値は詳細な英語のカンマ区切りフレーズで出力すること。
+- 人間以外の被写体（動物など）の場合は、服やメイクではなく「毛並み・瞳の反射・周囲の環境の生々しさ」に法則を応用して埋めること。
+- JSONだけでなく、自然言語で繋ぎ合わせたプレーンテキスト版の英語プロンプトと、それを正確に翻訳した日本語プロンプトも同時に出力してください。
+- 'explanation_ja' には、あなたがプロとして「どこをこだわってリアルさを演出したか（例：フラッシュの反射や、あえて構図を崩した点など）」を日本語で解説してください。
+`;
+
+        // --- DOM Elements ---
+        const els = {
+            apiKeyInput: document.getElementById('api-key-input'),
+            saveKeyBtn: document.getElementById('save-key-btn'),
+            logoutBtn: document.getElementById('logout-btn'),
+            inputArea: document.getElementById('api-key-input-area'),
+            loggedInArea: document.getElementById('logged-in-area'),
+            
+            promptInput: document.getElementById('prompt-input'),
+            generateBtn: document.getElementById('generate-btn'),
+            apiWarningText: document.getElementById('api-warning-text'),
+            
+            statusArea: document.getElementById('status-area'),
+            retryMessage: document.getElementById('retry-message'),
+            retryText: document.getElementById('retry-text'),
+            errorMessage: document.getElementById('error-message'),
+            errorText: document.getElementById('error-text'),
+            
+            emptyState: document.getElementById('empty-state'),
+            explanationContainer: document.getElementById('explanation-container'),
+            explanationText: document.getElementById('explanation-text'),
+            
+            plainTextContainer: document.getElementById('plain-text-container'),
+            englishOutput: document.getElementById('english-output'),
+            japaneseOutput: document.getElementById('japanese-output'),
+            
+            jsonOutput: document.getElementById('json-output'),
+            
+            copyJsonBtn: document.getElementById('copy-json-btn'),
+            copyJsonIcon: document.getElementById('copy-json-icon'),
+            copyJsonText: document.getElementById('copy-json-text'),
+            
+            copyEnBtn: document.getElementById('copy-en-btn'),
+            copyEnIcon: document.getElementById('copy-en-icon'),
+            copyEnText: document.getElementById('copy-en-text'),
+            
+            copyJaBtn: document.getElementById('copy-ja-btn'),
+            copyJaIcon: document.getElementById('copy-ja-icon'),
+            copyJaText: document.getElementById('copy-ja-text'),
+
+            rateLimitBar: document.getElementById('rate-limit-bar'),
+            rateLimitText: document.getElementById('rate-limit-text'),
+            rateLimitReset: document.getElementById('rate-limit-reset')
+        };
+
+        // --- State ---
+        let outputData = {
+            json: null,
+            en: null,
+            ja: null
+        };
+        let isGenerating = false;
+
+        // --- Initialization ---
+        function init() {
+            checkApiKey();
+            updateRateLimitUI();
+            
+            setInterval(updateRateLimitUI, 1000);
+
+            els.saveKeyBtn.addEventListener('click', saveApiKey);
+            els.logoutBtn.addEventListener('click', logout);
+            els.generateBtn.addEventListener('click', handleGenerate);
+            
+            els.copyJsonBtn.addEventListener('click', () => copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText));
+            els.copyEnBtn.addEventListener('click', () => copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText));
+            els.copyJaBtn.addEventListener('click', () => copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText));
+            
+            els.apiKeyInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveApiKey();
+            });
+            els.promptInput.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    if (!els.generateBtn.disabled && !isGenerating) {
+                        handleGenerate();
+                    }
+                }
+            });
+        }
+
+        // --- Auth Management ---
+        function checkApiKey() {
+            const key = localStorage.getItem(STORAGE_KEY);
+            if (key) {
+                els.inputArea.classList.add('hidden');
+                els.loggedInArea.classList.remove('hidden');
+                els.loggedInArea.classList.add('flex');
+                els.apiWarningText.classList.add('hidden');
+                if (!isGenerating) els.generateBtn.disabled = false;
+            } else {
+                els.inputArea.classList.remove('hidden');
+                els.loggedInArea.classList.add('hidden');
+                els.loggedInArea.classList.remove('flex');
+                els.apiWarningText.classList.remove('hidden');
+                els.generateBtn.disabled = true;
+            }
+        }
+
+        function saveApiKey() {
+            const key = els.apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem(STORAGE_KEY, key);
+                els.apiKeyInput.value = '';
+                checkApiKey();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(STORAGE_KEY);
+            checkApiKey();
+        }
+
+        function getApiKey() {
+            return localStorage.getItem(STORAGE_KEY) || ""; 
+        }
+
+        // --- Rate Limit Logic ---
+        function getRequestTimestamps() {
+            try {
+                return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function updateRateLimitUI() {
+            const now = Date.now();
+            let timestamps = getRequestTimestamps();
+            timestamps = timestamps.filter(t => now - t < TIME_WINDOW_MS);
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(timestamps));
+
+            const count = timestamps.length;
+            const percentage = (count / MAX_REQUESTS) * 100;
+            
+            els.rateLimitBar.style.width = `${percentage}%`;
+            els.rateLimitText.textContent = `${count} / ${MAX_REQUESTS}`;
+
+            if (percentage >= 100) {
+                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-red-500';
+            } else if (percentage >= 60) {
+                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-amber-400';
+            } else {
+                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-grok-500';
+            }
+
+            if (count > 0) {
+                const oldest = Math.min(...timestamps);
+                const resetIn = Math.ceil((oldest + TIME_WINDOW_MS - now) / 1000);
+                if (resetIn > 0) {
+                    els.rateLimitReset.textContent = `(${resetIn}秒後に回復)`;
+                } else {
+                    els.rateLimitReset.textContent = '';
+                }
+            } else {
+                els.rateLimitReset.textContent = '';
+            }
+
+            if (!isGenerating && getApiKey()) {
+                 if (count >= MAX_REQUESTS) {
+                     els.generateBtn.disabled = true;
+                     els.generateBtn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>制限到達: 回復待ち</span>`;
+                     lucide.createIcons();
+                 } else {
+                     els.generateBtn.disabled = false;
+                     els.generateBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i><span>プロンプトを生成</span>`;
+                     lucide.createIcons();
+                 }
+            }
+        }
+
+        function recordRequest() {
+            const timestamps = getRequestTimestamps();
+            timestamps.push(Date.now());
+            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(timestamps));
+            updateRateLimitUI();
+        }
+
+        // --- API Request Logic (with Exponential Backoff and Structured Output) ---
+        async function fetchWithBackoff(textInput) {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                throw new Error("APIキーが設定されていません。上部から設定してください。");
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+            
+            const responseSchema = {
+                type: "OBJECT",
+                properties: {
+                    grok_prompt_json: {
+                        type: "OBJECT",
+                        properties: {
+                            subject: {
+                                type: "OBJECT",
+                                properties: {
+                                    description: { type: "STRING" },
+                                    mirror_rules: { type: "STRING" },
+                                    age: { type: "STRING" },
+                                    expression: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            eyes: { type: "OBJECT", properties: { look: { type: "STRING" }, energy: { type: "STRING" }, direction: { type: "STRING" } }, required: ["look", "energy", "direction"] },
+                                            mouth: { type: "OBJECT", properties: { position: { type: "STRING" }, energy: { type: "STRING" } }, required: ["position", "energy"] },
+                                            overall: { type: "STRING" }
+                                        },
+                                        required: ["eyes", "mouth", "overall"]
+                                    },
+                                    face: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            preserve_original: { type: "BOOLEAN" },
+                                            makeup: { type: "STRING" }
+                                        },
+                                        required: ["preserve_original", "makeup"]
+                                    },
+                                    hair: {
+                                        type: "OBJECT",
+                                        properties: { color: { type: "STRING" }, style: { type: "STRING" }, effect: { type: "STRING" } },
+                                        required: ["color", "style", "effect"]
+                                    },
+                                    body: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            frame: { type: "STRING" }, waist: { type: "STRING" }, chest: { type: "STRING" }, legs: { type: "STRING" },
+                                            skin: {
+                                                type: "OBJECT",
+                                                properties: {
+                                                    visible_areas: { type: "ARRAY", items: { type: "STRING" } },
+                                                    tone: { type: "STRING" }, texture: { type: "STRING" }, lighting_effect: { type: "STRING" }
+                                                },
+                                                required: ["visible_areas", "tone", "texture", "lighting_effect"]
+                                            }
+                                        },
+                                        required: ["frame", "waist", "chest", "legs", "skin"]
+                                    },
+                                    pose: { type: "OBJECT", properties: { position: { type: "STRING" }, base: { type: "STRING" }, overall: { type: "STRING" } }, required: ["position", "base", "overall"] },
+                                    clothing: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            top: { type: "OBJECT", properties: { type: { type: "STRING" }, color: { type: "STRING" }, details: { type: "STRING" }, effect: { type: "STRING" } }, required: ["type", "color", "details", "effect"] },
+                                            bottom: { type: "OBJECT", properties: { type: { type: "STRING" }, color: { type: "STRING" }, details: { type: "STRING" }, effect: { type: "STRING" } }, required: ["type", "color", "details", "effect"] }
+                                        },
+                                        required: ["top", "bottom"]
+                                    }
+                                },
+                                required: ["description", "mirror_rules", "age", "expression", "face", "hair", "body", "pose", "clothing"]
+                            },
+                            accessories: { type: "OBJECT", properties: { headwear: { type: "STRING" }, jewelry: { type: "STRING" }, device: { type: "STRING" }, prop: { type: "STRING" } }, required: ["headwear", "jewelry", "device", "prop"] },
+                            photography: {
+                                type: "OBJECT",
+                                properties: {
+                                    camera_style: { type: "STRING" }, angle: { type: "STRING" }, shot_type: { type: "STRING" }, aspect_ratio: { type: "STRING" },
+                                    texture: { type: "STRING" }, lighting: { type: "STRING" }, depth_of_field: { type: "STRING" }
+                                },
+                                required: ["camera_style", "angle", "shot_type", "aspect_ratio", "texture", "lighting", "depth_of_field"]
+                            },
+                            background: {
+                                type: "OBJECT",
+                                properties: {
+                                    setting: { type: "STRING" }, wall_color: { type: "STRING" },
+                                    elements: { type: "ARRAY", items: { type: "STRING" } },
+                                    atmosphere: { type: "STRING" }, lighting: { type: "STRING" }
+                                },
+                                required: ["setting", "wall_color", "elements", "atmosphere", "lighting"]
+                            },
+                            the_vibe: {
+                                type: "OBJECT",
+                                properties: {
+                                    energy: { type: "STRING" }, mood: { type: "STRING" }, aesthetic: { type: "STRING" },
+                                    authenticity: { type: "STRING" }, intimacy: { type: "STRING" }, story: { type: "STRING" }, caption_energy: { type: "STRING" }
+                                },
+                                required: ["energy", "mood", "aesthetic", "authenticity", "intimacy", "story", "caption_energy"]
+                            },
+                            constraints: {
+                                type: "OBJECT",
+                                properties: {
+                                    must_keep: { type: "ARRAY", items: { type: "STRING" } },
+                                    avoid: { type: "ARRAY", items: { type: "STRING" } }
+                                },
+                                required: ["must_keep", "avoid"]
+                            },
+                            negative_prompt: { type: "ARRAY", items: { type: "STRING" } }
+                        },
+                        required: ["subject", "accessories", "photography", "background", "the_vibe", "constraints", "negative_prompt"]
+                    },
+                    english_prompt: { type: "STRING", description: "JSONの内容を元に構築された、Grok Imagen等に直接貼り付けて使用できる自然言語（英語）のプロンプトテキスト。" },
+                    japanese_prompt: { type: "STRING", description: "英語プロンプトを正確に日本語に翻訳した、内容確認用の日本語プロンプトテキスト。" },
+                    explanation_ja: { type: "STRING", description: "ユーザーの指示に対してAIがどのような要素を補完したかの日本語による解説" }
+                },
+                required: ["grok_prompt_json", "english_prompt", "japanese_prompt", "explanation_ja"]
+            };
+
+            const payload = {
+                contents: [{ parts: [{ text: textInput }] }],
+                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema 
+                }
+            };
+
+            const maxRetries = 4;
+            let delay = 1000;
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 || response.status >= 500) {
+                            throw new Error(`HTTP_${response.status}`);
+                        } else {
+                            const errData = await response.json().catch(()=>({}));
+                            throw new Error(errData.error?.message || `認証エラーまたは不正なリクエストです (${response.status})`);
+                        }
+                    }
+
+                    const data = await response.json();
+                    return data;
+
+                } catch (error) {
+                    const isRetryable = error.message.startsWith('HTTP_');
+                    if (attempt === maxRetries || !isRetryable) {
+                        throw error;
+                    }
+                    await showRetryCountdown(delay / 1000, attempt + 1);
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function showRetryCountdown(seconds, attemptNum) {
+            els.statusArea.classList.remove('hidden');
+            els.errorMessage.classList.add('hidden');
+            els.retryMessage.classList.remove('hidden');
+            
+            for (let i = seconds; i > 0; i--) {
+                els.retryText.textContent = `API制限（429）。${i}秒後に再試行します... (試行 ${attemptNum}/4)`;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        // --- Core Application Flow ---
+        async function handleGenerate() {
+            if (!getApiKey()) return;
+
+            const promptText = els.promptInput.value.trim();
+            if (!promptText) {
+                showError("描きたいイメージを入力してください。");
+                return;
+            }
+
+            updateRateLimitUI();
+            const timestamps = getRequestTimestamps();
+            const now = Date.now();
+            const validTimestamps = timestamps.filter(t => now - t < TIME_WINDOW_MS);
+            if (validTimestamps.length >= MAX_REQUESTS) {
+                showError("1分間の生成回数制限(5回)に達しました。しばらくお待ちください。");
+                return;
+            }
+
+            setLoadingState(true);
+            els.statusArea.classList.add('hidden');
+            els.errorMessage.classList.add('hidden');
+            els.retryMessage.classList.add('hidden');
+
+            try {
+                recordRequest();
+                const responseData = await fetchWithBackoff(promptText);
+                const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!responseText) throw new Error("AIから有効な応答がありませんでした。");
+
+                parseAndDisplayResult(responseText);
+
+            } catch (error) {
+                let msg = error.message;
+                if (msg.startsWith('HTTP_429')) msg = "リクエストが集中しています。時間をおいてお試しください。";
+                showError(msg);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function parseAndDisplayResult(responseText) {
+            try {
+                let cleanText = responseText.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim();
+                const parsed = JSON.parse(cleanText);
+
+                if (!parsed.grok_prompt_json || !parsed.english_prompt || !parsed.japanese_prompt) {
+                    throw new Error("指定されたフォーマットでデータが返されませんでした。");
+                }
+
+                // 出力データを保持
+                outputData.json = parsed.grok_prompt_json;
+                outputData.en = parsed.english_prompt;
+                outputData.ja = parsed.japanese_prompt;
+
+                // UI更新
+                els.emptyState.classList.add('opacity-0', 'pointer-events-none');
+                
+                // テキストブロックの表示
+                els.englishOutput.textContent = outputData.en;
+                els.japaneseOutput.textContent = outputData.ja;
+                els.plainTextContainer.classList.remove('hidden');
+                
+                // JSONのハイライト表示
+                const formattedJson = JSON.stringify(outputData.json, null, 2);
+                els.jsonOutput.innerHTML = syntaxHighlight(formattedJson);
+
+                // 解説表示
+                els.explanationText.textContent = parsed.explanation_ja || "解説はありません。";
+                els.explanationContainer.classList.remove('hidden');
+
+                // 少し遅延させてフェードイン
+                setTimeout(() => {
+                    els.explanationContainer.classList.remove('opacity-0');
+                    els.plainTextContainer.classList.remove('opacity-0');
+                }, 50);
+
+            } catch (error) {
+                console.error("JSON Parse Error:", error, responseText);
+                showError("AIの出力形式が不正でした。もう一度お試しください。");
+            }
+        }
+
+        // --- Utility Functions ---
+        function setLoadingState(isLoading) {
+            isGenerating = isLoading;
+            els.promptInput.disabled = isLoading;
+            
+            if (isLoading) {
+                els.generateBtn.disabled = true;
+                els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
+                lucide.createIcons();
+            } else {
+                updateRateLimitUI(); 
+            }
+        }
+
+        function showError(message) {
+            els.statusArea.classList.remove('hidden');
+            els.retryMessage.classList.add('hidden');
+            els.errorMessage.classList.remove('hidden');
+            els.errorText.textContent = message;
+        }
+
+        function copyToClipboard(textToCopy, iconElement, textElement) {
+            if (!textToCopy) return;
+            
+            const performCopy = () => {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                textArea.style.position = "absolute";
+                textArea.style.left = "-999999px";
+                document.body.prepend(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    return true;
+                } catch (error) {
+                    return false;
+                } finally {
+                    textArea.remove();
+                }
+            };
+
+            const showSuccess = () => {
+                iconElement.setAttribute('data-lucide', 'check');
+                iconElement.classList.add('text-grok-500');
+                textElement.textContent = 'コピー済';
+                lucide.createIcons();
+                
+                setTimeout(() => {
+                    iconElement.setAttribute('data-lucide', 'copy');
+                    iconElement.classList.remove('text-grok-500');
+                    textElement.textContent = 'コピー';
+                    lucide.createIcons();
+                }, 2000);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy)
+                    .then(() => showSuccess())
+                    .catch(() => {
+                        if (performCopy()) showSuccess();
+                    });
+            } else {
+                if (performCopy()) showSuccess();
+            }
+        }
+
+        // 簡易JSONシンタックスハイライト
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'text-slate-300';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        // Run Init
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
