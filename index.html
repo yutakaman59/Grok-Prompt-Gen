@@ -49,17 +49,17 @@
 
 <!-- ===== HEADER ===== -->
 <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
-    <!-- メインヘッダー行 -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-        <div class="flex items-center gap-3 flex-shrink-0">
+    <!-- 1段目: ロゴ / モデル / APIキー -->
+    <div class="max-w-7xl mx-auto px-4 h-12 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 flex-shrink-0">
             <i data-lucide="sparkles" class="text-grok-500 w-5 h-5"></i>
-            <h1 class="text-lg font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
+            <h1 class="text-base font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent whitespace-nowrap">Grok Prompt Gen</h1>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2">
             <!-- モデル選択 -->
-            <div class="flex items-center gap-1.5">
-                <i data-lucide="cpu" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
-                <select id="model-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+            <div class="flex items-center gap-1">
+                <i data-lucide="cpu" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0 hidden sm:block"></i>
+                <select id="model-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-base sm:text-xs focus:outline-none focus:border-grok-500 text-slate-200 max-w-[130px] sm:max-w-none">
                     <option value="gemini-2.5-flash-lite">2.5 Flash-Lite ⚡</option>
                     <option value="gemini-2.5-flash">2.5 Flash 🔥</option>
                     <option value="gemini-2.5-pro">2.5 Pro 💎</option>
@@ -68,18 +68,19 @@
                 </select>
             </div>
             <!-- APIキー管理 -->
-            <button id="open-keys-btn" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-xs px-2.5 py-1.5 rounded-md transition-colors">
+            <button id="open-keys-btn" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-xs px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0">
                 <i data-lucide="key-round" class="w-3.5 h-3.5 text-grok-500"></i>
                 <span>APIキー</span>
                 <span id="key-count-badge" class="bg-grok-600 text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
             </button>
-            <span id="active-key-label" class="text-xs text-slate-500 hidden">使用中: <span id="active-key-name" class="text-grok-500"></span></span>
+            <span id="active-key-label" class="text-xs text-slate-500 hidden sm:inline">使用中: <span id="active-key-name" class="text-grok-500"></span></span>
         </div>
     </div>
 
-    <!-- サブバー: アスペクト比 / スタイルプリセット / 被写体プリセット -->
+    <!-- 2段目: アスペクト比 / スタイルプリセット / 被写体 / カメラ -->
     <div class="border-t border-slate-800 bg-slate-950/80">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-4 overflow-x-auto">
+        <!-- 2段目1行目: アスペクト比 + スタイルプリセット -->
+        <div class="max-w-7xl mx-auto px-4 h-9 flex items-center gap-3 overflow-x-auto border-b border-slate-800/60">
             <!-- アスペクト比 -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <i data-lucide="frame" class="w-3.5 h-3.5 text-slate-500"></i>
@@ -95,12 +96,14 @@
             <!-- スタイルプリセット -->
             <div id="preset-buttons" class="flex items-center gap-1.5 flex-shrink-0">
                 <button data-preset="photorealism" class="preset-btn active border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">📷 超リアル実写</button>
-                <button data-preset="anime" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎌 アニメ</button>
-                <button data-preset="cinematic" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎬 シネマ</button>
-                <button data-preset="fantasy" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🔮 ファンタジー</button>
-                <button data-preset="product" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">📦 商品</button>
+                <button data-preset="anime"        class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎌 アニメ</button>
+                <button data-preset="cinematic"    class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎬 シネマ</button>
+                <button data-preset="fantasy"      class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🔮 ファンタジー</button>
+                <button data-preset="product"      class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">📦 商品</button>
             </div>
-            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+        </div>
+        <!-- 2段目2行目: 被写体 / カメラアングル / 画角 -->
+        <div class="max-w-7xl mx-auto px-4 h-9 flex items-center gap-3 overflow-x-auto">
             <!-- 被写体プリセット -->
             <div class="flex items-center gap-2 flex-shrink-0">
                 <button id="open-subjects-btn" class="flex items-center gap-1.5 hover:text-grok-500 text-xs text-slate-400 transition-colors whitespace-nowrap">
@@ -108,42 +111,40 @@
                     <span>被写体</span>
                     <span id="subject-count-badge" class="bg-slate-700 text-slate-300 text-[10px] rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
                 </button>
-                <!-- メイン被写体表示 -->
                 <span id="active-main-label" class="hidden items-center gap-1 text-xs">
                     <i data-lucide="user" class="w-3 h-3 text-amber-400"></i>
-                    <span class="text-amber-400" id="active-main-name"></span>
+                    <span class="text-amber-400 max-w-[70px] truncate" id="active-main-name"></span>
                     <button id="clear-main-btn" class="text-slate-600 hover:text-red-400 transition-colors text-[10px]">✕</button>
                 </span>
-                <!-- サブ被写体表示 -->
                 <span id="active-sub-label" class="hidden items-center gap-1 text-xs">
                     <i data-lucide="user-plus" class="w-3 h-3 text-purple-400"></i>
-                    <span class="text-purple-400" id="active-sub-name"></span>
+                    <span class="text-purple-400 max-w-[70px] truncate" id="active-sub-name"></span>
                     <button id="clear-sub-btn" class="text-slate-600 hover:text-red-400 transition-colors text-[10px]">✕</button>
                 </span>
             </div>
             <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
-            <!-- カメラ高さ・距離 -->
+            <!-- カメラアングル -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <i data-lucide="camera" class="w-3.5 h-3.5 text-slate-500"></i>
                 <select id="camera-angle-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
                     <option value="">アングル: 指定なし</option>
                     <optgroup label="── 高さ ──">
-                        <option value="eye level shot">👁️ アイレベル（目線）</option>
-                        <option value="low angle shot">⬇️ ローアングル（見上げ）</option>
-                        <option value="worm's eye view">🐛 虫の目（超ローアングル）</option>
+                        <option value="eye level shot">👁️ アイレベル</option>
+                        <option value="low angle shot">⬇️ ローアングル</option>
+                        <option value="worm's eye view">🐛 虫の目</option>
                         <option value="ground level perspective">🏔️ グラウンドレベル</option>
-                        <option value="high angle shot">⬆️ ハイアングル（見下ろし）</option>
-                        <option value="bird's eye view">🦅 鳥瞰図（真上に近い）</option>
-                        <option value="top-down perspective">🔝 トップダウン（真上）</option>
+                        <option value="high angle shot">⬆️ ハイアングル</option>
+                        <option value="bird's eye view">🦅 鳥瞰図</option>
+                        <option value="top-down perspective">🔝 トップダウン</option>
                         <option value="overhead view">📐 オーバーヘッド</option>
                     </optgroup>
                     <optgroup label="── 距離 ──">
                         <option value="extreme close-up">🔍 超クローズアップ</option>
                         <option value="close-up shot">📷 クローズアップ</option>
-                        <option value="medium shot">🧍 ミディアム（腰上）</option>
-                        <option value="wide shot">🌅 ワイド（引き）</option>
-                        <option value="long shot">🏞️ ロング（全身＋背景）</option>
-                        <option value="extreme long shot">🌐 超ロング（遠景）</option>
+                        <option value="medium shot">🧍 ミディアム</option>
+                        <option value="wide shot">🌅 ワイド</option>
+                        <option value="long shot">🏞️ ロング</option>
+                        <option value="extreme long shot">🌐 超ロング</option>
                     </optgroup>
                     <optgroup label="── 組み合わせ ──">
                         <option value="low angle close-up">⬇️🔍 ローアングル＋クローズアップ</option>
@@ -159,56 +160,47 @@
                 </select>
             </div>
             <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
-            <!-- 画角（フレーミング） -->
+            <!-- 画角 -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <i data-lucide="scan" class="w-3.5 h-3.5 text-slate-500"></i>
                 <select id="framing-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
                     <option value="">画角: 指定なし</option>
                     <optgroup label="── 全身・広め ──">
-                        <option value="full body shot">🧍 全身ショット</option>
-                        <option value="full length portrait">🖼️ フルレングスポートレート</option>
-                        <option value="panoramic wide shot">🌐 パノラマワイド</option>
-                        <option value="establishing shot">🏙️ エスタブリッシング（場所説明）</option>
+                        <option value="full body shot">🧍 全身</option>
+                        <option value="full length portrait">🖼️ フルレングス</option>
+                        <option value="panoramic wide shot">🌐 パノラマ</option>
+                        <option value="establishing shot">🏙️ エスタブリッシング</option>
                     </optgroup>
                     <optgroup label="── 上半身・バスト ──">
-                        <option value="waist-up shot">👗 腰上ショット</option>
+                        <option value="waist-up shot">👗 腰上</option>
                         <option value="bust-up shot">👕 バストアップ</option>
-                        <option value="upper body framing">💪 上半身フレーミング</option>
-                        <option value="medium close-up">📸 ミディアムクローズアップ</option>
+                        <option value="upper body framing">💪 上半身</option>
+                        <option value="medium close-up">📸 ミディアムCU</option>
                     </optgroup>
                     <optgroup label="── 顔・寄り ──">
                         <option value="headshot">🙂 ヘッドショット</option>
-                        <option value="face close-up">😊 顔のクローズアップ</option>
-                        <option value="extreme close-up on eyes">👁️ 目のクローズアップ</option>
-                        <option value="macro shot">🔬 マクロショット</option>
-                        <option value="detail close-up">🔎 ディテールクローズアップ</option>
+                        <option value="face close-up">😊 顔CU</option>
+                        <option value="extreme close-up on eyes">👁️ 目CU</option>
+                        <option value="macro shot">🔬 マクロ</option>
+                        <option value="detail close-up">🔎 ディテールCU</option>
                     </optgroup>
-                    <optgroup label="── 特殊アングル ──">
-                        <option value="three-quarter view">↗️ スリークォータービュー</option>
-                        <option value="profile shot">👤 横顔（プロファイル）</option>
-                        <option value="over-the-shoulder shot">🫂 オーバー・ザ・ショルダー</option>
-                        <option value="dutch angle">📐 ダッチアングル（斜め）</option>
-                        <option value="fisheye lens effect">🐟 魚眼レンズ</option>
-                        <option value="front-facing shot">🎯 正面ショット</option>
+                    <optgroup label="── 特殊 ──">
+                        <option value="three-quarter view">↗️ スリークォーター</option>
+                        <option value="profile shot">👤 横顔</option>
+                        <option value="over-the-shoulder shot">🫂 オーバーショルダー</option>
+                        <option value="dutch angle">📐 ダッチアングル</option>
+                        <option value="fisheye lens effect">🐟 魚眼</option>
+                        <option value="front-facing shot">🎯 正面</option>
                     </optgroup>
                 </select>
             </div>
-        </div>
-    </div>
-
-    <!-- レート制限バー -->
-    <div class="w-full h-0.5 bg-slate-800 relative group cursor-help" title="現在のAPIキーの使用制限">
-        <div id="rate-limit-bar" class="h-full bg-grok-500 transition-all duration-500 ease-in-out w-0"></div>
-        <div class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-xs py-1 px-2 rounded shadow-lg pointer-events-none z-50 flex items-center gap-2">
-            <span id="rate-limit-text">0 / 5</span>
-            <span id="rate-limit-reset" class="text-slate-400"></span>
         </div>
     </div>
 </header>
 
 <!-- ===== APIキー管理モーダル ===== -->
 <div id="keys-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg mx-3 shadow-2xl max-h-[90vh] flex flex-col">
         <div class="flex items-center justify-between p-5 border-b border-slate-800">
             <h2 class="font-semibold text-lg flex items-center gap-2">
                 <i data-lucide="key-round" class="w-5 h-5 text-grok-500"></i> APIキー管理
@@ -286,7 +278,7 @@
           <div>
             <label class="block text-xs font-medium text-slate-400 mb-1">プリセット名 <span class="text-red-400">*</span></label>
             <input type="text" id="sf-name" placeholder="例: 黒髪ロング・清楚系 20代" maxlength="30"
-              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-grok-500 placeholder-slate-500">
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-base sm:text-sm focus:outline-none focus:border-grok-500 placeholder-slate-500">
           </div>
 
           <!-- セクション: 基本情報 -->
@@ -523,22 +515,22 @@
 </div>
 
 <!-- ===== MAIN ===== -->
-<main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8">
 
     <!-- 左カラム -->
-    <div class="lg:col-span-4 flex flex-col gap-4">
-        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm">
+    <div class="lg:col-span-4 flex flex-col gap-3 sm:gap-4">
+        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-4 sm:p-5 shadow-sm">
 
             <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
                 <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i> 描きたい画像のイメージ
             </label>
-            <textarea id="prompt-input" rows="5"
-                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
+            <textarea id="prompt-input" rows="4"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-base sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
                 placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
 
             <!-- ステータスエリア -->
             <!-- ランダムプレビューパネル -->
-            <div id="random-preview-panel" class="hidden mt-3 bg-slate-800/80 border border-amber-500/40 rounded-xl p-3">
+            <div id="random-preview-panel" class="hidden mt-3 bg-slate-800/80 border border-amber-500/40 rounded-xl p-3 sm:p-4">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
                         <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> ランダム抽選結果
@@ -571,11 +563,11 @@
 
             <div class="mt-4 flex gap-2">
                 <button id="generate-btn" disabled
-                    class="flex-1 bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
+                    class="flex-1 bg-grok-600 hover:bg-grok-500 text-white py-3 sm:py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20 text-sm">
                     <i data-lucide="zap" class="w-4 h-4"></i><span>生成</span>
                 </button>
                 <button id="random-btn"
-                    class="bg-amber-600/80 hover:bg-amber-500 text-white py-2.5 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20" title="シチュエーション・服装・カメラをランダムに変えて生成">
+                    class="bg-amber-600/80 hover:bg-amber-500 text-white py-3 sm:py-2.5 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20 text-sm" title="シチュエーション・服装・カメラをランダムに変えて生成">
                     <i data-lucide="shuffle" class="w-4 h-4"></i><span class="text-sm">ランダム</span>
                 </button>
             </div>
@@ -593,7 +585,7 @@
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全削除
                 </button>
             </div>
-            <div id="history-list" class="flex flex-col max-h-80 overflow-y-auto divide-y divide-slate-700/30">
+            <div id="history-list" class="flex flex-col max-h-48 sm:max-h-80 overflow-y-auto divide-y divide-slate-700/30">
                 <p id="history-empty" class="text-xs text-slate-500 text-center py-6">履歴はまだありません</p>
             </div>
         </div>
@@ -634,7 +626,7 @@
                     </div>
                     <button id="copy-en-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
                         <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-en-icon"></i>
-                        <span id="copy-en-text">コピー</span>
+                        <span id="copy-en-text" class="hidden sm:inline">コピー</span>
                     </button>
                 </div>
                 <div class="p-4 overflow-auto flex-grow max-h-[300px]">
@@ -649,7 +641,7 @@
                     </div>
                     <button id="copy-ja-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
                         <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-ja-icon"></i>
-                        <span id="copy-ja-text">コピー</span>
+                        <span id="copy-ja-text" class="hidden sm:inline">コピー</span>
                     </button>
                 </div>
                 <div class="p-4 overflow-auto flex-grow max-h-[300px]">
@@ -673,7 +665,7 @@
                 </div>
                 <button id="copy-json-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
                     <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
-                    <span id="copy-json-text">コピー</span>
+                    <span id="copy-json-text" class="hidden sm:inline">コピー</span>
                 </button>
             </div>
             <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
@@ -752,6 +744,31 @@ const PRESETS = {
 ■ RULE 7: negative_prompt は最低8項目、具体的に列挙する
 必ず含めるべき定番項目: "anime", "3d render", "CGI", "plastic skin", "watermark", "logo", "text", "extra limbs", "distorted face/anatomy", "studio flash" or "harsh flash", "overexposed"
 シーンに応じて追加: "blurry face", "heavy makeup", "symmetrical composition", "neon lighting", "high resolution crisp DSLR look"（スナップ系の場合）
+
+■ RULE 8: 日本人・東アジア系の顔を確実に出す【Grok Imagine 顔バイアス対策・必須】
+Grok Imagineは "Japanese" 単体では西洋人の顔骨格を生成しやすい既知の癖がある。以下を必ず実行すること:
+- english_prompt の冒頭は必ず "A [age] Japanese woman with distinctly East Asian facial features," から始める
+- 東アジア特有の骨格を具体的に記述する: "soft monolid or natural double eyelid, low nose bridge, flat facial profile, softer jaw, high cheekbones characteristic of East Asian faces"
+- 肌トーンも具体的に: "light warm beige skin with cool-neutral East Asian undertone" のように記述する
+- negative_prompt に必ず追加: "Caucasian features", "Western facial structure", "deep-set eyes", "high nose bridge", "European face"
+★ "Japanese" という単語だけに頼らず、骨格・目・鼻・肌を個別に記述することで顔の一貫性が飛躍的に向上する。
+
+■ RULE 9: フレーミング・構図の厳守【Grok Imagine 顔アップ癖への対策】
+Grok Imagineは指定がない場合、デフォルトで顔クローズアップを生成しやすい既知の癖がある。
+以下の優先ロジックに従うこと:
+
+【最優先】ユーザーがプルダウンまたはプロンプトで画角・アングルを明示指定した場合
+→ その指定を100%忠実に守る。RULE 9の自動補正は発動しない。
+→ 例: "extreme close-up, cropped above the nose" → そのまま生成する。意図的な顔クローズアップを尊重する。
+
+【自動補正】画角の指定がなく、かつ服装・背景・ポーズの記述がある場合のみ発動
+→ framing フィールドに "waist-up or wider, full outfit visible, background visible" を必ず設定する
+→ english_prompt に "do NOT crop at the face — show clothing and background clearly" を追加する
+→ 全身指定がある場合: "full body shot, head to toe, entire figure in frame, wide enough to show background"
+
+【判定基準】
+- 画角指定あり = プルダウン選択あり OR プロンプトに close-up / crop / tight / face only / bust / waist / full body / wide 等のワードがある
+- 服装・背景指定あり = プロンプトまたはランダムシードに outfit / background / location 等の記述がある
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【出力要件】
