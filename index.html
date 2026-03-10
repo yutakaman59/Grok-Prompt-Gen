@@ -4,788 +4,1105 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grok Imagen Prompt Generator</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        mono: ['Fira Code', 'monospace'],
-                    },
+                    fontFamily: { sans: ['Inter','sans-serif'], mono: ['Fira Code','monospace'] },
                     colors: {
-                        grok: {
-                            50: '#f0fdfa',
-                            100: '#ccfbf1',
-                            500: '#14b8a6',
-                            600: '#0d9488',
-                            900: '#134e4a',
-                            950: '#042f2e',
-                        }
+                        grok: { 50:'#f0fdfa',100:'#ccfbf1',500:'#14b8a6',600:'#0d9488',900:'#134e4a',950:'#042f2e' }
                     }
                 }
             }
         }
     </script>
     <style>
-        /* カスタムスクロールバー */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        
-        /* ローディングスピナーのアニメーション */
-        .spinner {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        /* JSONのシンタックスハイライト風ベースカラー */
-        .json-string { color: #a7f3d0; }
-        .json-key { color: #93c5fd; }
-        .json-boolean { color: #fca5a5; }
-        .json-null { color: #d8b4fe; }
+        ::-webkit-scrollbar{width:8px;height:8px}
+        ::-webkit-scrollbar-track{background:#1e293b;border-radius:4px}
+        ::-webkit-scrollbar-thumb{background:#475569;border-radius:4px}
+        ::-webkit-scrollbar-thumb:hover{background:#64748b}
+        .spinner{animation:spin 1s linear infinite}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        .json-string{color:#a7f3d0}.json-key{color:#93c5fd}.json-boolean{color:#fca5a5}.json-null{color:#d8b4fe}
+        /* キー管理モーダル */
+        #keys-modal{display:none}
+        #keys-modal.show{display:flex}
+        /* 履歴アイテム */
+        .history-item{cursor:pointer;transition:background .15s}
+        .history-item:hover{background:rgba(71,85,105,.4)}
+        /* プリセットボタン */
+        .preset-btn{transition:all .15s}
+        .preset-btn:hover{border-color:#14b8a6;color:#14b8a6}
+        .preset-btn.active{border-color:#14b8a6;background:rgba(20,184,166,.1);color:#14b8a6}
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
 
-    <!-- Header -->
-    <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i data-lucide="sparkles" class="text-grok-500 w-6 h-6"></i>
-                <h1 class="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
-            </div>
-            
-            <!-- API Key Management -->
-            <div id="auth-container" class="flex items-center gap-4">
-                <div id="api-key-input-area" class="flex items-center gap-2 transition-all duration-300">
-                    <input type="password" id="api-key-input" placeholder="Gemini API Key" 
-                        class="bg-slate-900 border border-slate-700 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 w-48 placeholder-slate-500">
-                    <button id="save-key-btn" class="bg-grok-600 hover:bg-grok-500 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors">保存</button>
-                </div>
-                <div id="logged-in-area" class="hidden items-center gap-4">
-                    <span class="text-sm text-grok-500 flex items-center gap-1">
-                        <i data-lucide="check-circle-2" class="w-4 h-4"></i> APIキー設定済
-                    </span>
-                    <button id="logout-btn" class="text-slate-400 hover:text-white text-sm transition-colors flex items-center gap-1">
-                        <i data-lucide="log-out" class="w-4 h-4"></i> 削除
-                    </button>
-                </div>
-            </div>
+<!-- ===== HEADER ===== -->
+<header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3 flex-shrink-0">
+            <i data-lucide="sparkles" class="text-grok-500 w-6 h-6"></i>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
         </div>
-        
-        <!-- Rate Limit Progress Bar -->
-        <div class="w-full h-1 bg-slate-800 relative group cursor-help" title="API使用制限: 1分間に5回まで">
-            <div id="rate-limit-bar" class="h-full bg-grok-500 transition-all duration-500 ease-in-out w-0"></div>
-            <!-- Tooltip -->
-            <div class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-xs py-1 px-2 rounded shadow-lg pointer-events-none z-50 flex items-center gap-2">
-                <span id="rate-limit-text">0 / 5</span>
-                <span id="rate-limit-reset" class="text-slate-400"></span>
-            </div>
-        </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        <!-- Left Column: Input Area (Col Span 4) -->
-        <div class="lg:col-span-4 flex flex-col gap-4">
-            <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm">
-                <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
-                    <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i>
-                    描きたい画像のイメージ
+        <!-- モデル切り替え -->
+        <div class="flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <select id="model-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="gemini-2.5-flash-lite">2.5 Flash-Lite ⚡ (速/安)</option>
+                <option value="gemini-2.5-flash">2.5 Flash 🔥 (バランス)</option>
+                <option value="gemini-2.5-pro">2.5 Pro 💎 (最高品質)</option>
+                <option value="gemini-2.0-flash">2.0 Flash (安定版)</option>
+                <option value="gemini-2.0-flash-lite">2.0 Flash-Lite (軽量)</option>
+            </select>
+        </div>
+
+        <!-- アスペクト比 -->
+        <div class="flex items-center gap-2">
+            <i data-lucide="frame" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <select id="aspect-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="2:3">2:3 — 一眼レフ縦 🎞️</option>
+                <option value="3:2">3:2 — 一眼レフ横 📸</option>
+                <option value="1:1">1:1 — 正方形 ⬜</option>
+                <option value="9:16">9:16 — 縦長ポートレート 📱</option>
+                <option value="16:9">16:9 — 横長ワイド 🖥️</option>
+            </select>
+        </div>
+
+        <!-- APIキー管理ボタン -->
+        <div class="flex items-center gap-3">
+            <button id="open-keys-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-sm px-3 py-1.5 rounded-md transition-colors">
+                <i data-lucide="key-round" class="w-4 h-4 text-grok-500"></i>
+                <span>APIキー管理</span>
+                <span id="key-count-badge" class="bg-grok-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
+            </button>
+            <span id="active-key-label" class="text-xs text-slate-500 hidden">使用中: <span id="active-key-name" class="text-grok-500"></span></span>
+        </div>
+    </div>
+
+    <!-- レート制限バー (アクティブキー分) -->
+    <div class="w-full h-1 bg-slate-800 relative group cursor-help" title="現在のAPIキーの使用制限">
+        <div id="rate-limit-bar" class="h-full bg-grok-500 transition-all duration-500 ease-in-out w-0"></div>
+        <div class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-xs py-1 px-2 rounded shadow-lg pointer-events-none z-50 flex items-center gap-2">
+            <span id="rate-limit-text">0 / 5</span>
+            <span id="rate-limit-reset" class="text-slate-400"></span>
+        </div>
+    </div>
+</header>
+
+<!-- ===== APIキー管理モーダル ===== -->
+<div id="keys-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg mx-4 shadow-2xl">
+        <div class="flex items-center justify-between p-5 border-b border-slate-800">
+            <h2 class="font-semibold text-lg flex items-center gap-2">
+                <i data-lucide="key-round" class="w-5 h-5 text-grok-500"></i> APIキー管理
+            </h2>
+            <button id="close-keys-btn" class="text-slate-400 hover:text-white transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 flex flex-col gap-4">
+            <!-- 追加フォーム -->
+            <div class="flex gap-2">
+                <input type="text" id="key-name-input" placeholder="名前 (例: Key1)" class="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-grok-500 w-28 placeholder-slate-500">
+                <input type="password" id="key-value-input" placeholder="Gemini API Key" class="bg-slate-800 border border-slate-700 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-grok-500 flex-1 placeholder-slate-500">
+                <button id="add-key-btn" class="bg-grok-600 hover:bg-grok-500 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors flex-shrink-0">追加</button>
+            </div>
+
+            <!-- キー一覧 -->
+            <div id="keys-list" class="flex flex-col gap-2 max-h-64 overflow-y-auto"></div>
+
+            <!-- 自動切替説明 -->
+            <div class="bg-slate-800/50 rounded-lg p-3 text-xs text-slate-400 flex items-start gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-grok-500 flex-shrink-0 mt-0.5"></i>
+                <div>
+                    <p class="font-medium text-slate-300 mb-1">自動キーローテーション</p>
+                    <p>レート制限（429）に達したとき、登録済みの次のキーへ自動的に切り替えて再試行します。すべてのキーが制限に達した場合のみエラーを表示します。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+    <!-- 左カラム -->
+    <div class="lg:col-span-4 flex flex-col gap-4">
+        <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm">
+
+            <!-- プリセット選択 -->
+            <div class="mb-4">
+                <label class="block text-xs font-medium text-slate-400 mb-2 flex items-center gap-1.5">
+                    <i data-lucide="layout-template" class="w-3.5 h-3.5"></i> スタイルプリセット
                 </label>
-                <textarea id="prompt-input" rows="4" 
-                    class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
-                    placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
-                
-                <!-- Retry / Error Status Area -->
-                <div id="status-area" class="mt-3 hidden">
-                    <div id="retry-message" class="flex items-center gap-2 text-amber-400 bg-amber-400/10 border border-amber-400/20 p-2.5 rounded-lg text-sm">
-                        <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
-                        <span id="retry-text">API制限のため再試行中...</span>
-                    </div>
-                    <div id="error-message" class="hidden mt-2 flex items-start gap-2 text-red-400 bg-red-400/10 border border-red-400/20 p-2.5 rounded-lg text-sm">
-                        <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                        <span id="error-text">エラーが発生しました。</span>
-                    </div>
+                <div id="preset-buttons" class="flex flex-wrap gap-2">
+                    <button data-preset="photorealism" class="preset-btn active border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">📷 超リアル実写</button>
+                    <button data-preset="anime" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🎌 アニメ・イラスト</button>
+                    <button data-preset="cinematic" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🎬 シネマティック</button>
+                    <button data-preset="fantasy" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🔮 ファンタジー</button>
+                    <button data-preset="product" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">📦 商品撮影</button>
                 </div>
-
-                <button id="generate-btn" disabled
-                    class="mt-4 w-full bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
-                    <i data-lucide="zap" class="w-4 h-4"></i>
-                    <span>プロンプトを生成</span>
-                </button>
-                <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
             </div>
 
-            <!-- Hint Card -->
-            <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-400">
-                <h3 class="font-medium text-slate-300 flex items-center gap-2 mb-2">
-                    <i data-lucide="info" class="w-4 h-4"></i> 使い方
+            <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i> 描きたい画像のイメージ
+            </label>
+            <textarea id="prompt-input" rows="5"
+                class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
+                placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
+
+            <!-- ステータスエリア -->
+            <div id="status-area" class="mt-3 hidden">
+                <div id="retry-message" class="flex items-center gap-2 text-amber-400 bg-amber-400/10 border border-amber-400/20 p-2.5 rounded-lg text-sm">
+                    <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
+                    <span id="retry-text">API制限のため再試行中...</span>
+                </div>
+                <div id="error-message" class="hidden mt-2 flex items-start gap-2 text-red-400 bg-red-400/10 border border-red-400/20 p-2.5 rounded-lg text-sm">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+                    <span id="error-text">エラーが発生しました。</span>
+                </div>
+            </div>
+
+            <button id="generate-btn" disabled
+                class="mt-4 w-full bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
+                <i data-lucide="zap" class="w-4 h-4"></i>
+                <span>プロンプトを生成</span>
+            </button>
+            <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
+        </div>
+
+        <!-- 履歴パネル -->
+        <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
+                <h3 class="font-medium text-slate-300 flex items-center gap-2 text-sm">
+                    <i data-lucide="history" class="w-4 h-4"></i> 生成履歴
                 </h3>
-                <ul class="list-disc list-inside space-y-1 ml-1">
-                    <li>短い日本語でイメージを伝えてください。</li>
-                    <li>AIがGrok Imagenに最適な詳細な英語プロンプト（JSON/Text）に自動拡張します。</li>
-                    <li>生成されたテキストをコピーしてGrokに貼り付けてください。</li>
-                </ul>
+                <button id="clear-history-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors flex items-center gap-1">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全削除
+                </button>
+            </div>
+            <div id="history-list" class="flex flex-col max-h-80 overflow-y-auto divide-y divide-slate-700/30">
+                <p id="history-empty" class="text-xs text-slate-500 text-center py-6">履歴はまだありません</p>
             </div>
         </div>
 
-        <!-- Right Column: Output Area (Col Span 8) -->
-        <div class="lg:col-span-8 flex flex-col gap-6">
-            
-            <!-- Explanation Block -->
-            <div id="explanation-container" class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm hidden opacity-0 transition-opacity duration-500">
-                <h2 class="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
-                    <i data-lucide="message-square-text" class="w-4 h-4"></i> AIによる解説・補完内容
-                </h2>
-                <p id="explanation-text" class="text-slate-200 leading-relaxed"></p>
-            </div>
+        <!-- 使い方 -->
+        <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 text-sm text-slate-400">
+            <h3 class="font-medium text-slate-300 flex items-center gap-2 mb-2">
+                <i data-lucide="info" class="w-4 h-4"></i> 使い方
+            </h3>
+            <ul class="list-disc list-inside space-y-1 ml-1 text-xs">
+                <li>APIキー管理から複数のGemini APIキーを登録できます。</li>
+                <li>制限に達すると次のキーへ自動ローテーションします。</li>
+                <li>スタイルプリセットで生成スタイルを切り替えられます。</li>
+                <li>生成履歴をクリックすると内容を再表示できます。</li>
+                <li>Ctrl+Enter で即時生成できます。</li>
+            </ul>
+        </div>
+    </div>
 
-            <!-- Plain Text Prompts Block (English & Japanese) -->
-            <div id="plain-text-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden opacity-0 transition-opacity duration-500">
-                <!-- English Prompt -->
-                <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
-                    <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="text" class="w-4 h-4 text-slate-400"></i>
-                            <span class="text-xs font-medium text-slate-300">English Prompt</span>
-                        </div>
-                        <button id="copy-en-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
-                            <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-en-icon"></i>
-                            <span id="copy-en-text">コピー</span>
-                        </button>
-                    </div>
-                    <div class="p-4 overflow-auto flex-grow max-h-[300px]">
-                        <p id="english-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
-                    </div>
-                </div>
+    <!-- 右カラム -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
 
-                <!-- Japanese Prompt -->
-                <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
-                    <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="languages" class="w-4 h-4 text-slate-400"></i>
-                            <span class="text-xs font-medium text-slate-300">Japanese Prompt</span>
-                        </div>
-                        <button id="copy-ja-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
-                            <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-ja-icon"></i>
-                            <span id="copy-ja-text">コピー</span>
-                        </button>
-                    </div>
-                    <div class="p-4 overflow-auto flex-grow max-h-[300px]">
-                        <p id="japanese-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
-                    </div>
-                </div>
-            </div>
+        <!-- 解説ブロック -->
+        <div id="explanation-container" class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm hidden opacity-0 transition-opacity duration-500">
+            <h2 class="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
+                <i data-lucide="message-square-text" class="w-4 h-4"></i> AIによる解説・補完内容
+            </h2>
+            <p id="explanation-text" class="text-slate-200 leading-relaxed"></p>
+        </div>
 
-            <!-- JSON Output Block -->
-            <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col flex-grow relative">
-                
-                <!-- Overlay Initial State -->
-                <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 transition-opacity duration-300">
-                    <i data-lucide="code-2" class="w-12 h-12 text-slate-600 mb-3"></i>
-                    <p class="text-slate-400">生成されたプロンプトがここに表示されます</p>
-                </div>
-
-                <!-- Header of Code Block -->
+        <!-- プレーンテキスト出力 -->
+        <div id="plain-text-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden opacity-0 transition-opacity duration-500">
+            <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
                 <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></span>
-                        <span class="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></span>
-                        <span class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></span>
-                        <span class="ml-2 text-xs font-mono text-slate-400">grok_prompt.json</span>
+                        <i data-lucide="text" class="w-4 h-4 text-slate-400"></i>
+                        <span class="text-xs font-medium text-slate-300">English Prompt</span>
                     </div>
-                    <button id="copy-json-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
-                        <span id="copy-json-text">コピー</span>
+                    <button id="copy-en-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-en-icon"></i>
+                        <span id="copy-en-text">コピー</span>
                     </button>
                 </div>
-
-                <!-- Code Content -->
-                <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
-                    <pre><code id="json-output" class="font-mono text-sm leading-relaxed block text-slate-300"></code></pre>
+                <div class="p-4 overflow-auto flex-grow max-h-[300px]">
+                    <p id="english-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
                 </div>
             </div>
-            
+            <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col">
+                <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="languages" class="w-4 h-4 text-slate-400"></i>
+                        <span class="text-xs font-medium text-slate-300">Japanese Prompt</span>
+                    </div>
+                    <button id="copy-ja-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-ja-icon"></i>
+                        <span id="copy-ja-text">コピー</span>
+                    </button>
+                </div>
+                <div class="p-4 overflow-auto flex-grow max-h-[300px]">
+                    <p id="japanese-output" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+            </div>
         </div>
-    </main>
 
-    <script>
-        // Initialize Lucide Icons
-        lucide.createIcons();
+        <!-- JSON出力ブロック -->
+        <div class="bg-slate-950 border border-slate-700 rounded-xl overflow-hidden shadow-xl flex flex-col flex-grow relative">
+            <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-10 transition-opacity duration-300">
+                <i data-lucide="code-2" class="w-12 h-12 text-slate-600 mb-3"></i>
+                <p class="text-slate-400">生成されたプロンプトがここに表示されます</p>
+            </div>
+            <div class="bg-slate-800 border-b border-slate-700 px-4 py-2 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></span>
+                    <span class="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500/50"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></span>
+                    <span class="ml-2 text-xs font-mono text-slate-400">grok_prompt.json</span>
+                </div>
+                <button id="copy-json-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                    <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
+                    <span id="copy-json-text">コピー</span>
+                </button>
+            </div>
+            <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
+                <pre><code id="json-output" class="font-mono text-sm leading-relaxed block text-slate-300"></code></pre>
+            </div>
+        </div>
+    </div>
+</main>
 
-        // --- Configuration & Constants ---
-        const MODEL_NAME = "gemini-2.5-flash-lite";
-        const STORAGE_KEY = 'gemini_api_key_grok_gen';
-        const RATE_LIMIT_KEY = 'grok_gen_rate_limit';
-        const MAX_REQUESTS = 5;
-        const TIME_WINDOW_MS = 60 * 1000; // 1 minute
+<script>
+lucide.createIcons();
 
-        // System Instruction (Master Prompt Engineering for Photorealism)
-        const SYSTEM_INSTRUCTION = `
-あなたは世界トップクラスの「AI画像生成プロンプトエンジニア」および「プロのフォトグラファー」です。
-ユーザーから渡される短い日本語のアイデアを、Grok Imagen等で最高品質の「超リアルな実写画像（Aggressive Realism）」を出力するための、極めて詳細でリッチな英語プロンプトに拡張・翻訳してください。
+// ===================== 設定 =====================
+const STORAGE_KEYS_KEY   = 'grok_gen_api_keys';     // [{name, value}]
+const ACTIVE_KEY_IDX_KEY = 'grok_gen_active_key';
+const RATE_LIMIT_PREFIX  = 'grok_gen_rl_';           // + keyIndex
+const HISTORY_KEY        = 'grok_gen_history';
+const PRESET_KEY         = 'grok_gen_preset';
+const MODEL_KEY          = 'grok_gen_model';
+        const ASPECT_KEY         = 'grok_gen_aspect';
+const MAX_REQUESTS       = 5;
+const TIME_WINDOW_MS     = 60 * 1000;
 
-【実写（Photorealism）を生み出すための5つの絶対法則】
-単なる「綺麗な絵」ではなく、「現実に存在する写真」にするため、以下の要素を徹底的に組み込んでください。
+// ===================== プリセット システムプロンプト =====================
+const PRESETS = {
+    photorealism: {
+        label: '📷 超リアル実写',
+        instruction: `あなたは世界最高峰の「AI画像生成プロンプトエンジニア」です。
+ユーザーの短い日本語アイデアを、Grok Imagen で最高品質の超リアル画像を生成するための詳細な英語プロンプト（JSON形式）に拡張してください。
 
-1. カメラとレンズの物理的特性（Photography）
-- 機材の限界を描写する: "smartphone candid snapshot", "direct flash CCD", "high ISO vibe" など、あえてチープな機材感を入れる。
-- 光学的な不完全さ: "slight wide-angle distortion"（広角の歪み）, "compression artifacts"（圧縮ノイズ）, "mild grain/noise"（粒子感）, "motion blur" を必ず適度に含める。
-- ライティング: "harsh direct frontal flash"（強い正面フラッシュ）や "soft indoor ambient" など、光源の方向と質を具体的に指定し、スタジオライティング（studio lighting）は避ける。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【GOLDEN RULES — 理想プロンプトから抽出した絶対法則】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-2. 肌とメイクの生々しさ（Skin & Makeup）
-- CG感の排除: "perfect skin" は避け、"smooth but real", "faint pores"（微かな毛穴）, "soft velvet-like surface", "fresh skincare slip"（スキンケア後の滑らかさ）を指定する。
-- 光の反射: "specular highlights on forehead, cheekbones", "brightly illuminated by direct flash" など、肌の油分や水分によるテカリ（ハイライト）を記述する。
-- メイクの具体性: "glass-skin base", "subtle pout with hydrated lips", "natural soft glam" など、美容用語を用いてリアルな人間味を出す。
+■ RULE 1: カメラスタイルは「目的」に合わせて使い分ける
+- 夜間セルフィ・SNS投稿風 → "Direct flash photography, CCD digital camera aesthetic, high ISO vibe"
+- 路上・スナップ風 → "smartphone candid snapshot, social media realism" + 必ず "low-resolution, compression artifacts, slight motion blur, mild grain/noise"
+- 室内コスプレ・ポートレート → "realistic indoor cosplay portrait, clean digital look" + "soft diffused warm key light"
+- バドワール・私的撮影風 → "high-end digital portrait with a natural, candid boudoir feel" + "single soft window light"
+- スマホ俯瞰スナップ → "smartphone snapshot" + "natural, slight wide-angle distortion"
+★ 「studio lighting」「studio flash」「perfect DSLR look」はリアル感を破壊するため原則禁止。
 
-3. 構図と環境の「雑然さ」（Authenticity & Background）
-- 不完全な構図: "steep top-down angle", "slight dutch tilt", "messy framing", "slightly off-center" など、偶然撮れたようなアングルを指定する。
-- 生活感・背景: "rumpled bed sheets"（シワの寄ったシーツ）, "messy bed", "scattered clothes" など、空間が整いすぎていないことを強調する。
+■ RULE 2: 肌の質感はリアルな「不完全さ」で命を吹き込む
+- 光沢感のある肌 → "specular highlights on forehead, cheekbones, nose bridge, lips, collarbones"
+- フラッシュ直撃肌 → "brightly illuminated by direct flash, high contrast", "soft velvet-like surface with natural pores under flash"
+- 自然光の肌 → "smooth but real, faint pores, not overly retouched", "diffuse overcast daylight flattening highlights"
+- K-beauty風ツヤ肌 → "smooth and moisturized, fresh skincare slip, not plastic"
+★ "perfect skin" / "overly smooth retouching" / "plastic skin" / "heavy airbrushing" は必ずavoidに入れること。
 
-4. 服装と髪の「崩れ」（Clothing & Hair）
-- 意図的な乱れ: "straps slipped down to the upper arms (intentional)", "slightly messy from movement", "a few flyaways"（アホ毛/後れ毛）など、動きや重力を感じさせるシワ・崩れを描写する。
-- 素材感: "soft fabric folds", "delicate lace texture", "slight sheen on stockings" など、生地が光をどう反射するかを指定する。
+■ RULE 3: 構図・アングルは「偶然性」を演出する
+- top-down selfie → "steep top-down angle, slight dutch tilt, close to the face"
+- 俯瞰スナップ → "high angle, looking down" + "slight wide-angle distortion"
+- 親密バドワール → "slightly above eye-level, close and intimate"
+- 床座り全身 → "slightly low to eye-level perspective, straight-on"
+★ 常に "slightly off-center" か構図の「ズレ」をどこかに入れること。完璧な対称構図は避ける。
 
-5. 感情と文脈（Vibe & Story）
-- 写真の前後の文脈: "It felt like a pause after a ride", "caught in the middle of the night" など、なぜその写真が撮られたかのストーリーを付与する。
-- 繊細な表情: "subtle seriousness", "quiet, intimate, slightly dangerous", "tongue sticking out slightly" など、微細な筋肉の動きや感情を言語化する。
+■ RULE 4: 背景は「生活の痕跡」で空気感を作る
+- 夜外 → "pitch black darkness", "faint distant lights/stars in the dark void", "rapid fall-off to black background"
+- 路上 → "grey stone pavement tiles", "muted, cool, street-level intimacy"
+- 寝室 → "rumpled bed sheets", "clothes scattered casually", "ambient darkness interrupted by strong frontal flash"
+- 室内ポートレート → "distressed white wooden high-back chair", "light wood plank floor", "warm indoor ambience with soft shadow edges"
+- 自宅 → "wooden floorboards", "Monstera plant in pot", "cozy, private"
+★ 空白の無菌スタジオ背景は使わないこと。生活感・空気感を必ず入れる。
+
+■ RULE 5: 服・髪・アクセサリーの「物理的なリアリティ」
+- 服のズレ・乱れ → "straps slipped down to the upper arms (intentional)", "open zipper, casual slouch", "tight fit, highlighting curves"
+- 素材感 → "delicate lace texture with fine floral pattern", "soft fabric folds, gentle tension around the tie", "slight sheen on stockings"
+- 髪の動き → "a few flyaways", "wispy bangs, slightly messy from movement", "soft strands crossing the forehead"
+- アクセサリー → ブランドロゴは必ず "no logos" と明記し、具体的なディテール（"black choker with a silver cross pendant", "tiny hoops"）を記述する。
+
+■ RULE 6: the_vibe の「story」フィールドは必ず1〜2文の情景描写にする
+- 単語羅列NG。「なぜその瞬間が撮られたか」の短い物語を英語で書く。
+- 例: "It felt like a pause after a ride; the helmet was dropped beside her, and someone reached in as if to check she was okay."
+- 例: "As if a stylist quietly prepped her for a private shoot in a silent room, but the moment stayed human."
+
+■ RULE 7: negative_prompt は最低8項目、具体的に列挙する
+必ず含めるべき定番項目: "anime", "3d render", "CGI", "plastic skin", "watermark", "logo", "text", "extra limbs", "distorted face/anatomy", "studio flash" or "harsh flash", "overexposed"
+シーンに応じて追加: "blurry face", "heavy makeup", "symmetrical composition", "neon lighting", "high resolution crisp DSLR look"（スナップ系の場合）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【出力要件】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- 指定されたJSONスキーマに完全に従うこと。
+- 各フィールドの値は具体的な英語のフレーズで埋める（単語1語だけはNG）。
+- JSONに加えて、自然な英語プロンプト（english_prompt）と正確な日本語訳（japanese_prompt）も出力。
+- explanation_ja には「どのRULEをどう適用してリアルさを演出したか」を具体的に日本語で解説すること。
+- ユーザーがアニメ・イラスト系を明示した場合のみ、上記ルールを緩和してよい。それ以外はすべてこのルールに従うこと。`
+    },
+    anime: {
+        label: '🎌 アニメ・イラスト',
+        instruction: `あなたは世界最高水準の「アニメ・イラスト向けAI画像生成プロンプトエンジニア」です。
+ユーザーの日本語アイデアを、NovelAI/Stable Diffusion/Grok Imagenで最高品質のアニメ・イラスト画像を生成するための詳細な英語プロンプトに拡張してください。
+
+【アニメ・イラストスタイルの法則】
+1. アートスタイル: "anime style", "manga-inspired", "vibrant cel-shading", "clean line art", "studio quality illustration"
+2. キャラクター描写: "expressive large eyes", "detailed hair with highlights", "smooth skin", "dynamic pose", "chibi / bishoujo / shonen" など適切なスタイルを選択
+3. 色彩: "pastel color palette", "vivid saturated colors", "soft gradient background", "bokeh background"
+4. ライティング: "rim lighting", "soft ambient light", "dramatic backlighting", "magical particle effects"
+5. 品質タグ: "masterpiece, best quality, ultra-detailed, highres, 8k"
 
 【出力要件】
-- ユーザーの指示がアニメ調を指定していない限り、デフォルトで上記法則に従った「圧倒的な実写」として解釈すること。
-- 出力は必ず指定されたJSONスキーマに完全に従い、各値は詳細な英語のカンマ区切りフレーズで出力すること。
-- 人間以外の被写体（動物など）の場合は、服やメイクではなく「毛並み・瞳の反射・周囲の環境の生々しさ」に法則を応用して埋めること。
-- JSONだけでなく、自然言語で繋ぎ合わせたプレーンテキスト版の英語プロンプトと、それを正確に翻訳した日本語プロンプトも同時に出力してください。
-- 'explanation_ja' には、あなたがプロとして「どこをこだわってリアルさを演出したか（例：フラッシュの反射や、あえて構図を崩した点など）」を日本語で解説してください。
-`;
+- 必ずアニメ・イラスト寄りのスタイルで解釈すること。写実的な表現は避ける。
+- JSONスキーマに完全に従うこと。
+- explanation_ja にはアニメ表現のこだわりポイントを日本語で解説。`
+    },
+    cinematic: {
+        label: '🎬 シネマティック',
+        instruction: `あなたはハリウッド映画の撮影監督（DP）の視点を持つ「シネマティック画像プロンプトエンジニア」です。
+ユーザーの日本語アイデアを、映画のワンシーンのような圧倒的な臨場感と映像美を持つ英語プロンプトに拡張してください。
 
-        // --- DOM Elements ---
-        const els = {
-            apiKeyInput: document.getElementById('api-key-input'),
-            saveKeyBtn: document.getElementById('save-key-btn'),
-            logoutBtn: document.getElementById('logout-btn'),
-            inputArea: document.getElementById('api-key-input-area'),
-            loggedInArea: document.getElementById('logged-in-area'),
-            
-            promptInput: document.getElementById('prompt-input'),
-            generateBtn: document.getElementById('generate-btn'),
-            apiWarningText: document.getElementById('api-warning-text'),
-            
-            statusArea: document.getElementById('status-area'),
-            retryMessage: document.getElementById('retry-message'),
-            retryText: document.getElementById('retry-text'),
-            errorMessage: document.getElementById('error-message'),
-            errorText: document.getElementById('error-text'),
-            
-            emptyState: document.getElementById('empty-state'),
-            explanationContainer: document.getElementById('explanation-container'),
-            explanationText: document.getElementById('explanation-text'),
-            
-            plainTextContainer: document.getElementById('plain-text-container'),
-            englishOutput: document.getElementById('english-output'),
-            japaneseOutput: document.getElementById('japanese-output'),
-            
-            jsonOutput: document.getElementById('json-output'),
-            
-            copyJsonBtn: document.getElementById('copy-json-btn'),
-            copyJsonIcon: document.getElementById('copy-json-icon'),
-            copyJsonText: document.getElementById('copy-json-text'),
-            
-            copyEnBtn: document.getElementById('copy-en-btn'),
-            copyEnIcon: document.getElementById('copy-en-icon'),
-            copyEnText: document.getElementById('copy-en-text'),
-            
-            copyJaBtn: document.getElementById('copy-ja-btn'),
-            copyJaIcon: document.getElementById('copy-ja-icon'),
-            copyJaText: document.getElementById('copy-ja-text'),
+【シネマティックの法則】
+1. カメラ: "anamorphic lens flare", "cinema 4K", "film grain", "35mm film", "ARRI Alexa look", "widescreen 2.39:1"
+2. 照明: "golden hour backlight", "motivated practical lighting", "chiaroscuro contrast", "volumetric fog", "lens flare"
+3. 構図: "rule of thirds", "leading lines", "wide establishing shot" or "extreme close-up for emotion"
+4. カラーグレーディング: "teal and orange grade", "moody desaturated tones", "film-noir contrast", "warm cinematic LUT"
+5. ムード: "epic cinematic atmosphere", "dramatic tension", "emotional depth", "storytelling composition"
 
-            rateLimitBar: document.getElementById('rate-limit-bar'),
-            rateLimitText: document.getElementById('rate-limit-text'),
-            rateLimitReset: document.getElementById('rate-limit-reset')
-        };
+【出力要件】
+- 映画的な美しさと物語性を最優先にすること。JSONスキーマに完全に従うこと。
+- explanation_ja には映像演出のこだわりを日本語で解説。`
+    },
+    fantasy: {
+        label: '🔮 ファンタジー',
+        instruction: `あなたは「ファンタジーアート・コンセプトアートの専門プロンプトエンジニア」です。
+ユーザーの日本語アイデアを、圧倒的な世界観とディテールを持つファンタジーアート英語プロンプトに拡張してください。
 
-        // --- State ---
-        let outputData = {
-            json: null,
-            en: null,
-            ja: null
-        };
-        let isGenerating = false;
+【ファンタジーアートの法則】
+1. スタイル: "epic fantasy concept art", "Artstation trending", "digital painting", "by Greg Rutkowski and Alphonse Mucha"
+2. 世界観: "mythical landscape", "ancient ruins", "magical atmosphere", "bioluminescent flora", "ethereal mist"
+3. 光と魔法: "magical particle effects", "god rays piercing through clouds", "glowing runes", "aurora borealis", "mystical aura"
+4. キャラクター: "intricate armor detail", "flowing robes with arcane symbols", "elven features", "draconic scales"
+5. 品質: "8k ultra-detailed", "hyper-realistic fantasy", "cinematic lighting", "masterpiece"
 
-        // --- Initialization ---
-        function init() {
-            checkApiKey();
+【出力要件】
+- 壮大なファンタジー世界観を最優先にすること。JSONスキーマに完全に従うこと。
+- explanation_ja にはファンタジー表現の工夫を日本語で解説。`
+    },
+    product: {
+        label: '📦 商品撮影',
+        instruction: `あなたは「商業製品フォトグラファー兼プロダクトビジュアライザー」です。
+ユーザーの日本語アイデアを、広告・ECサイトで使える最高品質の商品撮影プロンプトに拡張してください。
+
+【商品撮影の法則】
+1. ライティング: "studio softbox lighting", "three-point lighting setup", "specular highlights on product surface", "clean white background" or "lifestyle background"
+2. カメラ: "product photography", "macro lens detail", "85mm f/2.8", "shallow depth of field on product", "tack-sharp focus"
+3. 演出: "floating product", "splash of liquid", "smoke / steam effect", "reflective surface", "premium packaging"
+4. カラー: "clean neutral tones", "brand color accent", "shadow only on bottom"
+5. 品質: "commercial photography", "4K ultra-sharp", "advertising quality", "CGI product render"
+
+【出力要件】
+- 商業的な美しさと製品の魅力を最大化すること。JSONスキーマに完全に従うこと。
+- explanation_ja には演出のポイントを日本語で解説。`
+    }
+};
+
+// ===================== DOM要素 =====================
+const els = {
+    modelSelect:      document.getElementById('model-select'),
+    aspectSelect:     document.getElementById('aspect-select'),
+    openKeysBtn:      document.getElementById('open-keys-btn'),
+    closeKeysBtn:     document.getElementById('close-keys-btn'),
+    keysModal:        document.getElementById('keys-modal'),
+    keyNameInput:     document.getElementById('key-name-input'),
+    keyValueInput:    document.getElementById('key-value-input'),
+    addKeyBtn:        document.getElementById('add-key-btn'),
+    keysList:         document.getElementById('keys-list'),
+    keyCountBadge:    document.getElementById('key-count-badge'),
+    activeKeyLabel:   document.getElementById('active-key-label'),
+    activeKeyName:    document.getElementById('active-key-name'),
+
+    promptInput:      document.getElementById('prompt-input'),
+    generateBtn:      document.getElementById('generate-btn'),
+    apiWarningText:   document.getElementById('api-warning-text'),
+    presetButtons:    document.querySelectorAll('.preset-btn'),
+
+    statusArea:       document.getElementById('status-area'),
+    retryMessage:     document.getElementById('retry-message'),
+    retryText:        document.getElementById('retry-text'),
+    errorMessage:     document.getElementById('error-message'),
+    errorText:        document.getElementById('error-text'),
+
+    emptyState:           document.getElementById('empty-state'),
+    explanationContainer: document.getElementById('explanation-container'),
+    explanationText:      document.getElementById('explanation-text'),
+    plainTextContainer:   document.getElementById('plain-text-container'),
+    englishOutput:        document.getElementById('english-output'),
+    japaneseOutput:       document.getElementById('japanese-output'),
+    jsonOutput:           document.getElementById('json-output'),
+
+    copyJsonBtn:  document.getElementById('copy-json-btn'),
+    copyJsonIcon: document.getElementById('copy-json-icon'),
+    copyJsonText: document.getElementById('copy-json-text'),
+    copyEnBtn:    document.getElementById('copy-en-btn'),
+    copyEnIcon:   document.getElementById('copy-en-icon'),
+    copyEnText:   document.getElementById('copy-en-text'),
+    copyJaBtn:    document.getElementById('copy-ja-btn'),
+    copyJaIcon:   document.getElementById('copy-ja-icon'),
+    copyJaText:   document.getElementById('copy-ja-text'),
+
+    rateLimitBar:   document.getElementById('rate-limit-bar'),
+    rateLimitText:  document.getElementById('rate-limit-text'),
+    rateLimitReset: document.getElementById('rate-limit-reset'),
+
+    historyList:     document.getElementById('history-list'),
+    historyEmpty:    document.getElementById('history-empty'),
+    clearHistoryBtn: document.getElementById('clear-history-btn'),
+};
+
+// ===================== 状態 =====================
+let outputData = { json: null, en: null, ja: null };
+let isGenerating = false;
+let currentPreset = 'photorealism';
+
+// ===================== 初期化 =====================
+function init() {
+    // モデル復元
+    const savedModel = localStorage.getItem(MODEL_KEY);
+    if (savedModel) els.modelSelect.value = savedModel;
+    els.modelSelect.addEventListener('change', () => localStorage.setItem(MODEL_KEY, els.modelSelect.value));
+
+        // アスペクト比復元
+        const savedAspect = localStorage.getItem(ASPECT_KEY);
+        if (savedAspect) els.aspectSelect.value = savedAspect;
+        els.aspectSelect.addEventListener('change', () => localStorage.setItem(ASPECT_KEY, els.aspectSelect.value));
+
+    // プリセット復元
+    const savedPreset = localStorage.getItem(PRESET_KEY) || 'photorealism';
+    setPreset(savedPreset);
+
+    els.presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => setPreset(btn.dataset.preset));
+    });
+
+    // APIキー関連
+    renderKeysList();
+    updateKeyUI();
+    els.openKeysBtn.addEventListener('click', () => els.keysModal.classList.add('show'));
+    els.closeKeysBtn.addEventListener('click', () => els.keysModal.classList.remove('show'));
+    els.keysModal.addEventListener('click', e => { if (e.target === els.keysModal) els.keysModal.classList.remove('show'); });
+    els.addKeyBtn.addEventListener('click', addApiKey);
+    els.keyValueInput.addEventListener('keypress', e => { if (e.key === 'Enter') addApiKey(); });
+
+    // 生成
+    els.generateBtn.addEventListener('click', handleGenerate);
+    els.promptInput.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !els.generateBtn.disabled && !isGenerating) handleGenerate();
+    });
+
+    // コピー
+    els.copyJsonBtn.addEventListener('click', () => copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText));
+    els.copyEnBtn.addEventListener('click', () => copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText));
+    els.copyJaBtn.addEventListener('click', () => copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText));
+
+    // 履歴
+    els.clearHistoryBtn.addEventListener('click', clearHistory);
+    renderHistory();
+
+    // レート制限バー
+    updateRateLimitUI();
+    setInterval(updateRateLimitUI, 1000);
+}
+
+// ===================== プリセット =====================
+function setPreset(presetKey) {
+    if (!PRESETS[presetKey]) return;
+    currentPreset = presetKey;
+    localStorage.setItem(PRESET_KEY, presetKey);
+    els.presetButtons.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === presetKey);
+    });
+}
+
+// ===================== APIキー管理 =====================
+function getApiKeys() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEYS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveApiKeys(keys) {
+    localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(keys));
+}
+
+function getActiveKeyIndex() {
+    const idx = parseInt(localStorage.getItem(ACTIVE_KEY_IDX_KEY) || '0', 10);
+    const keys = getApiKeys();
+    if (keys.length === 0) return -1;
+    return Math.min(idx, keys.length - 1);
+}
+
+function setActiveKeyIndex(idx) {
+    localStorage.setItem(ACTIVE_KEY_IDX_KEY, String(idx));
+}
+
+function addApiKey() {
+    const name  = els.keyNameInput.value.trim() || `Key${getApiKeys().length + 1}`;
+    const value = els.keyValueInput.value.trim();
+    if (!value) return;
+    const keys = getApiKeys();
+    keys.push({ name, value });
+    saveApiKeys(keys);
+    if (keys.length === 1) setActiveKeyIndex(0);
+    els.keyNameInput.value = '';
+    els.keyValueInput.value = '';
+    renderKeysList();
+    updateKeyUI();
+}
+
+function removeApiKey(idx) {
+    const keys = getApiKeys();
+    keys.splice(idx, 1);
+    saveApiKeys(keys);
+    let active = getActiveKeyIndex();
+    if (active >= keys.length) setActiveKeyIndex(Math.max(0, keys.length - 1));
+    renderKeysList();
+    updateKeyUI();
+}
+
+function renderKeysList() {
+    const keys = getApiKeys();
+    const active = getActiveKeyIndex();
+    els.keysList.innerHTML = '';
+    if (keys.length === 0) {
+        els.keysList.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">キーが登録されていません</p>';
+        return;
+    }
+    keys.forEach((k, i) => {
+        const div = document.createElement('div');
+        div.className = `flex items-center gap-3 p-3 rounded-lg border ${i === active ? 'border-grok-500 bg-grok-500/10' : 'border-slate-700 bg-slate-800/50'}`;
+        const rl = getKeyRateLimitCount(i);
+        div.innerHTML = `
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-slate-200">${escapeHtml(k.name)}</span>
+                    ${i === active ? '<span class="text-xs bg-grok-600 text-white px-1.5 py-0.5 rounded">使用中</span>' : ''}
+                    ${rl >= MAX_REQUESTS ? '<span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">制限中</span>' : ''}
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5 truncate">${k.value.slice(0,8)}••••••••${k.value.slice(-4)}</p>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                ${i !== active ? `<button onclick="switchKey(${i})" class="text-xs text-grok-500 hover:text-grok-400 transition-colors px-2 py-1 rounded border border-grok-500/30 hover:border-grok-500">切替</button>` : ''}
+                <button onclick="removeApiKey(${i})" class="text-slate-500 hover:text-red-400 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </div>`;
+        els.keysList.appendChild(div);
+    });
+    lucide.createIcons();
+}
+
+function switchKey(idx) {
+    setActiveKeyIndex(idx);
+    renderKeysList();
+    updateKeyUI();
+    updateRateLimitUI();
+}
+
+function updateKeyUI() {
+    const keys = getApiKeys();
+    els.keyCountBadge.textContent = keys.length;
+    if (keys.length > 0) {
+        const idx = getActiveKeyIndex();
+        els.activeKeyLabel.classList.remove('hidden');
+        els.activeKeyName.textContent = keys[idx]?.name || 'Key' + (idx + 1);
+        els.apiWarningText.classList.add('hidden');
+        if (!isGenerating) els.generateBtn.disabled = false;
+    } else {
+        els.activeKeyLabel.classList.add('hidden');
+        els.apiWarningText.classList.remove('hidden');
+        els.generateBtn.disabled = true;
+    }
+}
+
+// ===================== レート制限 (キーごと) =====================
+function getRateLimitKey(keyIndex) {
+    return RATE_LIMIT_PREFIX + keyIndex;
+}
+
+function getKeyTimestamps(keyIndex) {
+    try { return JSON.parse(localStorage.getItem(getRateLimitKey(keyIndex)) || '[]'); } catch { return []; }
+}
+
+function cleanKeyTimestamps(keyIndex) {
+    const now = Date.now();
+    const ts = getKeyTimestamps(keyIndex).filter(t => now - t < TIME_WINDOW_MS);
+    localStorage.setItem(getRateLimitKey(keyIndex), JSON.stringify(ts));
+    return ts;
+}
+
+function getKeyRateLimitCount(keyIndex) {
+    return cleanKeyTimestamps(keyIndex).length;
+}
+
+function recordKeyRequest(keyIndex) {
+    const ts = cleanKeyTimestamps(keyIndex);
+    ts.push(Date.now());
+    localStorage.setItem(getRateLimitKey(keyIndex), JSON.stringify(ts));
+}
+
+function updateRateLimitUI() {
+    const idx = getActiveKeyIndex();
+    if (idx < 0) { els.rateLimitBar.style.width = '0%'; els.rateLimitText.textContent = '0 / 5'; return; }
+    const ts = cleanKeyTimestamps(idx);
+    const count = ts.length;
+    const pct = (count / MAX_REQUESTS) * 100;
+    els.rateLimitBar.style.width = `${pct}%`;
+    els.rateLimitText.textContent = `${count} / ${MAX_REQUESTS}`;
+
+    if (pct >= 100) els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-red-500';
+    else if (pct >= 60) els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-amber-400';
+    else els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-grok-500';
+
+    if (count > 0) {
+        const oldest = Math.min(...ts);
+        const resetIn = Math.ceil((oldest + TIME_WINDOW_MS - Date.now()) / 1000);
+        els.rateLimitReset.textContent = resetIn > 0 ? `(${resetIn}秒後に回復)` : '';
+    } else {
+        els.rateLimitReset.textContent = '';
+    }
+
+    if (!isGenerating && getApiKeys().length > 0) {
+        // すべてのキーが制限中かチェック
+        const allLimited = getApiKeys().every((_, i) => getKeyRateLimitCount(i) >= MAX_REQUESTS);
+        if (allLimited) {
+            els.generateBtn.disabled = true;
+            els.generateBtn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>全キー制限中: 回復待ち</span>`;
+        } else {
+            els.generateBtn.disabled = false;
+            els.generateBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i><span>プロンプトを生成</span>`;
+        }
+        lucide.createIcons();
+    }
+}
+
+
+// ===================== アスペクト比指示 =====================
+function getAspectRatio() {
+    return els.aspectSelect ? els.aspectSelect.value : '1:1';
+}
+
+function getAspectInstruction() {
+    const ratio = getAspectRatio();
+    const labels = {
+        '1:1':  '正方形（Square）',
+        '16:9': '横長ワイドスクリーン（Landscape Wide）',
+        '9:16': '縦長ポートレート（Vertical Portrait）',
+        '4:3':  'スタンダード横（Standard Landscape）',
+        '3:4':  'スタンダード縦（Standard Portrait）',
+        '3:2':  '一眼レフ横（DSLR Landscape）',
+        '2:3':  '一眼レフ縦（DSLR Portrait）',
+    };
+    return `\n\n【アスペクト比指定】\nユーザーが選択したアスペクト比: ${ratio}（${labels[ratio] || ratio}）\ngrok_prompt_json.photography.aspect_ratio フィールドには必ず "${ratio}" を設定してください。また英語プロンプトにも "aspect ratio ${ratio}" を明記してください。`;
+}
+
+        // ===================== キーローテーション付きAPIリクエスト =====================
+async function fetchWithKeyRotation(textInput) {
+    const keys = getApiKeys();
+    if (keys.length === 0) throw new Error('APIキーが登録されていません。キー管理から追加してください。');
+
+    const modelName = els.modelSelect.value;
+    const systemInstruction = PRESETS[currentPreset].instruction + getAspectInstruction();
+    const responseSchema = buildResponseSchema();
+
+    const startIdx = getActiveKeyIndex();
+    const totalKeys = keys.length;
+
+    for (let rotation = 0; rotation < totalKeys; rotation++) {
+        const keyIdx = (startIdx + rotation) % totalKeys;
+        const apiKey = keys[keyIdx].value;
+
+        if (getKeyRateLimitCount(keyIdx) >= MAX_REQUESTS) {
+            // このキーは制限中、次へ
+            if (rotation < totalKeys - 1) {
+                showRetryInfo(`キー「${keys[keyIdx].name}」は制限中。次のキーへ切替中...`);
+                await sleep(500);
+            }
+            continue;
+        }
+
+        // このキーで試行（指数バックオフ）
+        const result = await tryFetchWithKey(apiKey, keyIdx, keys[keyIdx].name, modelName, systemInstruction, responseSchema, textInput);
+        if (result.success) {
+            setActiveKeyIndex(keyIdx);
             updateRateLimitUI();
-            
-            setInterval(updateRateLimitUI, 1000);
+            renderKeysList();
+            return result.data;
+        }
+        if (!result.rateLimit) {
+            // 429以外のエラーはそのままスロー
+            throw new Error(result.error);
+        }
+        // 429 → 次のキーへローテーション
+        if (rotation < totalKeys - 1) {
+            showRetryInfo(`キー「${keys[keyIdx].name}」が制限到達。次のキーへ切替中...`);
+            await sleep(500);
+        }
+    }
+    throw new Error('登録されているすべてのAPIキーのレート制限に達しました。しばらくお待ちください。');
+}
 
-            els.saveKeyBtn.addEventListener('click', saveApiKey);
-            els.logoutBtn.addEventListener('click', logout);
-            els.generateBtn.addEventListener('click', handleGenerate);
-            
-            els.copyJsonBtn.addEventListener('click', () => copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText));
-            els.copyEnBtn.addEventListener('click', () => copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText));
-            els.copyJaBtn.addEventListener('click', () => copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText));
-            
-            els.apiKeyInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') saveApiKey();
+async function tryFetchWithKey(apiKey, keyIdx, keyName, modelName, systemInstruction, responseSchema, textInput) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const payload = {
+        contents: [{ parts: [{ text: textInput }] }],
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        generationConfig: { responseMimeType: 'application/json', responseSchema }
+    };
+
+    const maxRetries = 2;
+    let delay = 1500;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
-            els.promptInput.addEventListener('keydown', (e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-                    if (!els.generateBtn.disabled && !isGenerating) {
-                        handleGenerate();
-                    }
+
+            if (response.status === 429) {
+                if (attempt < maxRetries) {
+                    showRetryInfo(`キー「${keyName}」429エラー。${delay/1000}秒後に再試行... (${attempt+1}/${maxRetries})`);
+                    await sleep(delay);
+                    delay *= 2;
+                    continue;
                 }
-            });
-        }
-
-        // --- Auth Management ---
-        function checkApiKey() {
-            const key = localStorage.getItem(STORAGE_KEY);
-            if (key) {
-                els.inputArea.classList.add('hidden');
-                els.loggedInArea.classList.remove('hidden');
-                els.loggedInArea.classList.add('flex');
-                els.apiWarningText.classList.add('hidden');
-                if (!isGenerating) els.generateBtn.disabled = false;
-            } else {
-                els.inputArea.classList.remove('hidden');
-                els.loggedInArea.classList.add('hidden');
-                els.loggedInArea.classList.remove('flex');
-                els.apiWarningText.classList.remove('hidden');
-                els.generateBtn.disabled = true;
-            }
-        }
-
-        function saveApiKey() {
-            const key = els.apiKeyInput.value.trim();
-            if (key) {
-                localStorage.setItem(STORAGE_KEY, key);
-                els.apiKeyInput.value = '';
-                checkApiKey();
-            }
-        }
-
-        function logout() {
-            localStorage.removeItem(STORAGE_KEY);
-            checkApiKey();
-        }
-
-        function getApiKey() {
-            return localStorage.getItem(STORAGE_KEY) || ""; 
-        }
-
-        // --- Rate Limit Logic ---
-        function getRequestTimestamps() {
-            try {
-                return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '[]');
-            } catch {
-                return [];
-            }
-        }
-
-        function updateRateLimitUI() {
-            const now = Date.now();
-            let timestamps = getRequestTimestamps();
-            timestamps = timestamps.filter(t => now - t < TIME_WINDOW_MS);
-            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(timestamps));
-
-            const count = timestamps.length;
-            const percentage = (count / MAX_REQUESTS) * 100;
-            
-            els.rateLimitBar.style.width = `${percentage}%`;
-            els.rateLimitText.textContent = `${count} / ${MAX_REQUESTS}`;
-
-            if (percentage >= 100) {
-                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-red-500';
-            } else if (percentage >= 60) {
-                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-amber-400';
-            } else {
-                els.rateLimitBar.className = 'h-full transition-all duration-500 ease-in-out bg-grok-500';
+                return { success: false, rateLimit: true, error: '429' };
             }
 
-            if (count > 0) {
-                const oldest = Math.min(...timestamps);
-                const resetIn = Math.ceil((oldest + TIME_WINDOW_MS - now) / 1000);
-                if (resetIn > 0) {
-                    els.rateLimitReset.textContent = `(${resetIn}秒後に回復)`;
-                } else {
-                    els.rateLimitReset.textContent = '';
-                }
-            } else {
-                els.rateLimitReset.textContent = '';
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                return { success: false, rateLimit: false, error: errData.error?.message || `エラー (${response.status})` };
             }
 
-            if (!isGenerating && getApiKey()) {
-                 if (count >= MAX_REQUESTS) {
-                     els.generateBtn.disabled = true;
-                     els.generateBtn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>制限到達: 回復待ち</span>`;
-                     lucide.createIcons();
-                 } else {
-                     els.generateBtn.disabled = false;
-                     els.generateBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i><span>プロンプトを生成</span>`;
-                     lucide.createIcons();
-                 }
-            }
+            recordKeyRequest(keyIdx);
+            const data = await response.json();
+            return { success: true, data };
+
+        } catch (e) {
+            if (attempt === maxRetries) return { success: false, rateLimit: false, error: e.message };
+            await sleep(delay);
+            delay *= 2;
         }
+    }
+    return { success: false, rateLimit: true, error: 'max retries' };
+}
 
-        function recordRequest() {
-            const timestamps = getRequestTimestamps();
-            timestamps.push(Date.now());
-            localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(timestamps));
-            updateRateLimitUI();
-        }
+function showRetryInfo(msg) {
+    els.statusArea.classList.remove('hidden');
+    els.errorMessage.classList.add('hidden');
+    els.retryMessage.classList.remove('hidden');
+    els.retryText.textContent = msg;
+}
 
-        // --- API Request Logic (with Exponential Backoff and Structured Output) ---
-        async function fetchWithBackoff(textInput) {
-            const apiKey = getApiKey();
-            if (!apiKey) {
-                throw new Error("APIキーが設定されていません。上部から設定してください。");
-            }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-            
-            const responseSchema = {
-                type: "OBJECT",
+// ===================== JSONスキーマ =====================
+function buildResponseSchema() {
+    return {
+        type: 'OBJECT',
+        properties: {
+            grok_prompt_json: {
+                type: 'OBJECT',
                 properties: {
-                    grok_prompt_json: {
-                        type: "OBJECT",
+                    subject: {
+                        type: 'OBJECT',
                         properties: {
-                            subject: {
-                                type: "OBJECT",
+                            description:  { type: 'STRING' },
+                            mirror_rules: { type: 'STRING' },
+                            age:          { type: 'STRING' },
+                            expression: {
+                                type: 'OBJECT',
                                 properties: {
-                                    description: { type: "STRING" },
-                                    mirror_rules: { type: "STRING" },
-                                    age: { type: "STRING" },
-                                    expression: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            eyes: { type: "OBJECT", properties: { look: { type: "STRING" }, energy: { type: "STRING" }, direction: { type: "STRING" } }, required: ["look", "energy", "direction"] },
-                                            mouth: { type: "OBJECT", properties: { position: { type: "STRING" }, energy: { type: "STRING" } }, required: ["position", "energy"] },
-                                            overall: { type: "STRING" }
-                                        },
-                                        required: ["eyes", "mouth", "overall"]
-                                    },
-                                    face: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            preserve_original: { type: "BOOLEAN" },
-                                            makeup: { type: "STRING" }
-                                        },
-                                        required: ["preserve_original", "makeup"]
-                                    },
-                                    hair: {
-                                        type: "OBJECT",
-                                        properties: { color: { type: "STRING" }, style: { type: "STRING" }, effect: { type: "STRING" } },
-                                        required: ["color", "style", "effect"]
-                                    },
-                                    body: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            frame: { type: "STRING" }, waist: { type: "STRING" }, chest: { type: "STRING" }, legs: { type: "STRING" },
-                                            skin: {
-                                                type: "OBJECT",
-                                                properties: {
-                                                    visible_areas: { type: "ARRAY", items: { type: "STRING" } },
-                                                    tone: { type: "STRING" }, texture: { type: "STRING" }, lighting_effect: { type: "STRING" }
-                                                },
-                                                required: ["visible_areas", "tone", "texture", "lighting_effect"]
-                                            }
-                                        },
-                                        required: ["frame", "waist", "chest", "legs", "skin"]
-                                    },
-                                    pose: { type: "OBJECT", properties: { position: { type: "STRING" }, base: { type: "STRING" }, overall: { type: "STRING" } }, required: ["position", "base", "overall"] },
-                                    clothing: {
-                                        type: "OBJECT",
-                                        properties: {
-                                            top: { type: "OBJECT", properties: { type: { type: "STRING" }, color: { type: "STRING" }, details: { type: "STRING" }, effect: { type: "STRING" } }, required: ["type", "color", "details", "effect"] },
-                                            bottom: { type: "OBJECT", properties: { type: { type: "STRING" }, color: { type: "STRING" }, details: { type: "STRING" }, effect: { type: "STRING" } }, required: ["type", "color", "details", "effect"] }
-                                        },
-                                        required: ["top", "bottom"]
+                                    eyes:    { type: 'OBJECT', properties: { look: {type:'STRING'}, energy: {type:'STRING'}, direction: {type:'STRING'} }, required: ['look','energy','direction'] },
+                                    mouth:   { type: 'OBJECT', properties: { position: {type:'STRING'}, energy: {type:'STRING'} }, required: ['position','energy'] },
+                                    overall: { type: 'STRING' }
+                                },
+                                required: ['eyes','mouth','overall']
+                            },
+                            face: {
+                                type: 'OBJECT',
+                                properties: { preserve_original: {type:'BOOLEAN'}, makeup: {type:'STRING'} },
+                                required: ['preserve_original','makeup']
+                            },
+                            hair: {
+                                type: 'OBJECT',
+                                properties: { color:{type:'STRING'}, style:{type:'STRING'}, effect:{type:'STRING'} },
+                                required: ['color','style','effect']
+                            },
+                            body: {
+                                type: 'OBJECT',
+                                properties: {
+                                    frame:{type:'STRING'}, waist:{type:'STRING'}, chest:{type:'STRING'}, legs:{type:'STRING'},
+                                    skin: {
+                                        type: 'OBJECT',
+                                        properties: { visible_areas:{type:'ARRAY',items:{type:'STRING'}}, tone:{type:'STRING'}, texture:{type:'STRING'}, lighting_effect:{type:'STRING'} },
+                                        required: ['visible_areas','tone','texture','lighting_effect']
                                     }
                                 },
-                                required: ["description", "mirror_rules", "age", "expression", "face", "hair", "body", "pose", "clothing"]
+                                required: ['frame','waist','chest','legs','skin']
                             },
-                            accessories: { type: "OBJECT", properties: { headwear: { type: "STRING" }, jewelry: { type: "STRING" }, device: { type: "STRING" }, prop: { type: "STRING" } }, required: ["headwear", "jewelry", "device", "prop"] },
-                            photography: {
-                                type: "OBJECT",
+                            pose: {
+                                type: 'OBJECT',
+                                properties: { position:{type:'STRING'}, base:{type:'STRING'}, overall:{type:'STRING'} },
+                                required: ['position','base','overall']
+                            },
+                            clothing: {
+                                type: 'OBJECT',
                                 properties: {
-                                    camera_style: { type: "STRING" }, angle: { type: "STRING" }, shot_type: { type: "STRING" }, aspect_ratio: { type: "STRING" },
-                                    texture: { type: "STRING" }, lighting: { type: "STRING" }, depth_of_field: { type: "STRING" }
+                                    top:    { type:'OBJECT', properties:{type:{type:'STRING'},color:{type:'STRING'},details:{type:'STRING'},effect:{type:'STRING'}}, required:['type','color','details','effect'] },
+                                    bottom: { type:'OBJECT', properties:{type:{type:'STRING'},color:{type:'STRING'},details:{type:'STRING'},effect:{type:'STRING'}}, required:['type','color','details','effect'] }
                                 },
-                                required: ["camera_style", "angle", "shot_type", "aspect_ratio", "texture", "lighting", "depth_of_field"]
-                            },
-                            background: {
-                                type: "OBJECT",
-                                properties: {
-                                    setting: { type: "STRING" }, wall_color: { type: "STRING" },
-                                    elements: { type: "ARRAY", items: { type: "STRING" } },
-                                    atmosphere: { type: "STRING" }, lighting: { type: "STRING" }
-                                },
-                                required: ["setting", "wall_color", "elements", "atmosphere", "lighting"]
-                            },
-                            the_vibe: {
-                                type: "OBJECT",
-                                properties: {
-                                    energy: { type: "STRING" }, mood: { type: "STRING" }, aesthetic: { type: "STRING" },
-                                    authenticity: { type: "STRING" }, intimacy: { type: "STRING" }, story: { type: "STRING" }, caption_energy: { type: "STRING" }
-                                },
-                                required: ["energy", "mood", "aesthetic", "authenticity", "intimacy", "story", "caption_energy"]
-                            },
-                            constraints: {
-                                type: "OBJECT",
-                                properties: {
-                                    must_keep: { type: "ARRAY", items: { type: "STRING" } },
-                                    avoid: { type: "ARRAY", items: { type: "STRING" } }
-                                },
-                                required: ["must_keep", "avoid"]
-                            },
-                            negative_prompt: { type: "ARRAY", items: { type: "STRING" } }
+                                required: ['top','bottom']
+                            }
                         },
-                        required: ["subject", "accessories", "photography", "background", "the_vibe", "constraints", "negative_prompt"]
+                        required: ['description','mirror_rules','age','expression','face','hair','body','pose','clothing']
                     },
-                    english_prompt: { type: "STRING", description: "JSONの内容を元に構築された、Grok Imagen等に直接貼り付けて使用できる自然言語（英語）のプロンプトテキスト。" },
-                    japanese_prompt: { type: "STRING", description: "英語プロンプトを正確に日本語に翻訳した、内容確認用の日本語プロンプトテキスト。" },
-                    explanation_ja: { type: "STRING", description: "ユーザーの指示に対してAIがどのような要素を補完したかの日本語による解説" }
+                    accessories: { type:'OBJECT', properties:{headwear:{type:'STRING'},jewelry:{type:'STRING'},device:{type:'STRING'},prop:{type:'STRING'}}, required:['headwear','jewelry','device','prop'] },
+                    photography: {
+                        type: 'OBJECT',
+                        properties: { camera_style:{type:'STRING'}, angle:{type:'STRING'}, shot_type:{type:'STRING'}, aspect_ratio:{type:'STRING'}, texture:{type:'STRING'}, lighting:{type:'STRING'}, depth_of_field:{type:'STRING'} },
+                        required: ['camera_style','angle','shot_type','aspect_ratio','texture','lighting','depth_of_field']
+                    },
+                    background: {
+                        type: 'OBJECT',
+                        properties: { setting:{type:'STRING'}, wall_color:{type:'STRING'}, elements:{type:'ARRAY',items:{type:'STRING'}}, atmosphere:{type:'STRING'}, lighting:{type:'STRING'} },
+                        required: ['setting','wall_color','elements','atmosphere','lighting']
+                    },
+                    the_vibe: {
+                        type: 'OBJECT',
+                        properties: { energy:{type:'STRING'}, mood:{type:'STRING'}, aesthetic:{type:'STRING'}, authenticity:{type:'STRING'}, intimacy:{type:'STRING'}, story:{type:'STRING'}, caption_energy:{type:'STRING'} },
+                        required: ['energy','mood','aesthetic','authenticity','intimacy','story','caption_energy']
+                    },
+                    constraints: {
+                        type: 'OBJECT',
+                        properties: { must_keep:{type:'ARRAY',items:{type:'STRING'}}, avoid:{type:'ARRAY',items:{type:'STRING'}} },
+                        required: ['must_keep','avoid']
+                    },
+                    negative_prompt: { type:'ARRAY', items:{type:'STRING'} }
                 },
-                required: ["grok_prompt_json", "english_prompt", "japanese_prompt", "explanation_ja"]
-            };
+                required: ['subject','accessories','photography','background','the_vibe','constraints','negative_prompt']
+            },
+            english_prompt:  { type:'STRING' },
+            japanese_prompt: { type:'STRING' },
+            explanation_ja:  { type:'STRING' }
+        },
+        required: ['grok_prompt_json','english_prompt','japanese_prompt','explanation_ja']
+    };
+}
 
-            const payload = {
-                contents: [{ parts: [{ text: textInput }] }],
-                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: responseSchema 
-                }
-            };
+// ===================== メイン生成フロー =====================
+async function handleGenerate() {
+    const keys = getApiKeys();
+    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
 
-            const maxRetries = 4;
-            let delay = 1000;
+    const promptText = els.promptInput.value.trim();
+    if (!promptText) { showError('描きたいイメージを入力してください。'); return; }
 
-            for (let attempt = 0; attempt <= maxRetries; attempt++) {
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
+    // 全キーが制限中なら早期リターン
+    const allLimited = keys.every((_, i) => getKeyRateLimitCount(i) >= MAX_REQUESTS);
+    if (allLimited) { showError('すべてのAPIキーが制限中です。しばらくお待ちください。'); return; }
 
-                    if (!response.ok) {
-                        if (response.status === 429 || response.status >= 500) {
-                            throw new Error(`HTTP_${response.status}`);
-                        } else {
-                            const errData = await response.json().catch(()=>({}));
-                            throw new Error(errData.error?.message || `認証エラーまたは不正なリクエストです (${response.status})`);
-                        }
-                    }
+    setLoadingState(true);
+    els.statusArea.classList.add('hidden');
+    els.errorMessage.classList.add('hidden');
+    els.retryMessage.classList.add('hidden');
 
-                    const data = await response.json();
-                    return data;
+    try {
+        const responseData = await fetchWithKeyRotation(promptText);
+        const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) throw new Error('AIから有効な応答がありませんでした。');
+        parseAndDisplayResult(responseText, promptText);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        setLoadingState(false);
+    }
+}
 
-                } catch (error) {
-                    const isRetryable = error.message.startsWith('HTTP_');
-                    if (attempt === maxRetries || !isRetryable) {
-                        throw error;
-                    }
-                    await showRetryCountdown(delay / 1000, attempt + 1);
-                    delay *= 2;
-                }
-            }
-        }
+// ===================== 結果表示 =====================
+function parseAndDisplayResult(responseText, promptText) {
+    try {
+        let cleanText = responseText.replace(/^```json\n?/i,'').replace(/\n?```$/i,'').trim();
+        const parsed = JSON.parse(cleanText);
+        if (!parsed.grok_prompt_json || !parsed.english_prompt || !parsed.japanese_prompt) throw new Error('フォーマット不正');
 
-        async function showRetryCountdown(seconds, attemptNum) {
-            els.statusArea.classList.remove('hidden');
-            els.errorMessage.classList.add('hidden');
-            els.retryMessage.classList.remove('hidden');
-            
-            for (let i = seconds; i > 0; i--) {
-                els.retryText.textContent = `API制限（429）。${i}秒後に再試行します... (試行 ${attemptNum}/4)`;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
+        outputData.json = parsed.grok_prompt_json;
+        outputData.en   = parsed.english_prompt;
+        outputData.ja   = parsed.japanese_prompt;
 
-        // --- Core Application Flow ---
-        async function handleGenerate() {
-            if (!getApiKey()) return;
+        els.emptyState.classList.add('opacity-0','pointer-events-none');
+        els.englishOutput.textContent  = outputData.en;
+        els.japaneseOutput.textContent = outputData.ja;
+        els.plainTextContainer.classList.remove('hidden');
+        els.jsonOutput.innerHTML = syntaxHighlight(JSON.stringify(outputData.json, null, 2));
+        els.explanationText.textContent = parsed.explanation_ja || '解説はありません。';
+        els.explanationContainer.classList.remove('hidden');
+        setTimeout(() => {
+            els.explanationContainer.classList.remove('opacity-0');
+            els.plainTextContainer.classList.remove('opacity-0');
+        }, 50);
 
-            const promptText = els.promptInput.value.trim();
-            if (!promptText) {
-                showError("描きたいイメージを入力してください。");
-                return;
-            }
+        // 履歴に保存
+        addHistory({ prompt: promptText, preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, timestamp: Date.now() });
 
-            updateRateLimitUI();
-            const timestamps = getRequestTimestamps();
-            const now = Date.now();
-            const validTimestamps = timestamps.filter(t => now - t < TIME_WINDOW_MS);
-            if (validTimestamps.length >= MAX_REQUESTS) {
-                showError("1分間の生成回数制限(5回)に達しました。しばらくお待ちください。");
-                return;
-            }
+    } catch (error) {
+        console.error('Parse Error:', error, responseText);
+        showError('AIの出力形式が不正でした。もう一度お試しください。');
+    }
+}
 
-            setLoadingState(true);
-            els.statusArea.classList.add('hidden');
-            els.errorMessage.classList.add('hidden');
-            els.retryMessage.classList.add('hidden');
+// ===================== 履歴 =====================
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
 
-            try {
-                recordRequest();
-                const responseData = await fetchWithBackoff(promptText);
-                const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-                if (!responseText) throw new Error("AIから有効な応答がありませんでした。");
+function addHistory(entry) {
+    const history = getHistory();
+    history.unshift(entry);
+    if (history.length > 30) history.pop(); // 最大30件
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    renderHistory();
+}
 
-                parseAndDisplayResult(responseText);
+function clearHistory() {
+    if (!confirm('履歴をすべて削除しますか？')) return;
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+}
 
-            } catch (error) {
-                let msg = error.message;
-                if (msg.startsWith('HTTP_429')) msg = "リクエストが集中しています。時間をおいてお試しください。";
-                showError(msg);
-            } finally {
-                setLoadingState(false);
-            }
-        }
+function renderHistory() {
+    const history = getHistory();
+    els.historyList.innerHTML = '';
+    if (history.length === 0) {
+        els.historyEmpty.style.display = 'block';
+        els.historyList.appendChild(els.historyEmpty);
+        return;
+    }
+    els.historyEmpty.style.display = 'none';
+    history.forEach((entry, i) => {
+        const div = document.createElement('div');
+        div.className = 'history-item px-4 py-3 flex items-start gap-3';
+        const date = new Date(entry.timestamp);
+        const timeStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+        const presetLabel = PRESETS[entry.preset]?.label || entry.preset;
+        div.innerHTML = `
+            <div class="flex-1 min-w-0" onclick="loadHistory(${i})">
+                <p class="text-xs text-slate-300 truncate font-medium">${escapeHtml(entry.prompt)}</p>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs text-slate-500">${timeStr}</span>
+                    <span class="text-xs text-slate-600">·</span>
+                    <span class="text-xs text-slate-500">${presetLabel}</span>
+                    <span class="text-xs text-slate-600">·</span>
+                    <span class="text-xs text-slate-500">${entry.model || 'unknown'}</span>
+                </div>
+            </div>
+            <button onclick="deleteHistory(${i})" class="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`;
+        els.historyList.appendChild(div);
+    });
+    lucide.createIcons();
+}
 
-        function parseAndDisplayResult(responseText) {
-            try {
-                let cleanText = responseText.replace(/^```json\n?/i, '').replace(/\n?```$/i, '').trim();
-                const parsed = JSON.parse(cleanText);
+function loadHistory(idx) {
+    const history = getHistory();
+    const entry = history[idx];
+    if (!entry) return;
+    outputData = { ...entry.outputData };
+    els.promptInput.value = entry.prompt;
 
-                if (!parsed.grok_prompt_json || !parsed.english_prompt || !parsed.japanese_prompt) {
-                    throw new Error("指定されたフォーマットでデータが返されませんでした。");
-                }
+    els.emptyState.classList.add('opacity-0','pointer-events-none');
+    els.englishOutput.textContent  = outputData.en;
+    els.japaneseOutput.textContent = outputData.ja;
+    els.plainTextContainer.classList.remove('hidden','opacity-0');
+    els.jsonOutput.innerHTML = syntaxHighlight(JSON.stringify(outputData.json, null, 2));
+    els.explanationContainer.classList.remove('hidden','opacity-0');
+    // 解説は保存していないので省略表示
+    els.explanationText.textContent = '（履歴から復元）';
+}
 
-                // 出力データを保持
-                outputData.json = parsed.grok_prompt_json;
-                outputData.en = parsed.english_prompt;
-                outputData.ja = parsed.japanese_prompt;
+function deleteHistory(idx) {
+    const history = getHistory();
+    history.splice(idx, 1);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    renderHistory();
+}
 
-                // UI更新
-                els.emptyState.classList.add('opacity-0', 'pointer-events-none');
-                
-                // テキストブロックの表示
-                els.englishOutput.textContent = outputData.en;
-                els.japaneseOutput.textContent = outputData.ja;
-                els.plainTextContainer.classList.remove('hidden');
-                
-                // JSONのハイライト表示
-                const formattedJson = JSON.stringify(outputData.json, null, 2);
-                els.jsonOutput.innerHTML = syntaxHighlight(formattedJson);
+// ===================== ユーティリティ =====================
+function setLoadingState(isLoading) {
+    isGenerating = isLoading;
+    els.promptInput.disabled = isLoading;
+    if (isLoading) {
+        els.generateBtn.disabled = true;
+        els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
+        lucide.createIcons();
+    } else {
+        updateRateLimitUI();
+        renderKeysList();
+    }
+}
 
-                // 解説表示
-                els.explanationText.textContent = parsed.explanation_ja || "解説はありません。";
-                els.explanationContainer.classList.remove('hidden');
+function showError(message) {
+    els.statusArea.classList.remove('hidden');
+    els.retryMessage.classList.add('hidden');
+    els.errorMessage.classList.remove('hidden');
+    els.errorText.textContent = message;
+}
 
-                // 少し遅延させてフェードイン
-                setTimeout(() => {
-                    els.explanationContainer.classList.remove('opacity-0');
-                    els.plainTextContainer.classList.remove('opacity-0');
-                }, 50);
+function copyToClipboard(textToCopy, iconEl, textEl) {
+    if (!textToCopy) return;
+    const doCopy = () => {
+        const ta = document.createElement('textarea');
+        ta.value = textToCopy;
+        ta.style.cssText = 'position:absolute;left:-999999px';
+        document.body.prepend(ta);
+        ta.select();
+        try { document.execCommand('copy'); return true; } catch { return false; } finally { ta.remove(); }
+    };
+    const showOk = () => {
+        iconEl.setAttribute('data-lucide','check'); iconEl.classList.add('text-grok-500'); textEl.textContent = 'コピー済';
+        lucide.createIcons();
+        setTimeout(() => { iconEl.setAttribute('data-lucide','copy'); iconEl.classList.remove('text-grok-500'); textEl.textContent = 'コピー'; lucide.createIcons(); }, 2000);
+    };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(textToCopy).then(showOk).catch(() => { if (doCopy()) showOk(); });
+    else if (doCopy()) showOk();
+}
 
-            } catch (error) {
-                console.error("JSON Parse Error:", error, responseText);
-                showError("AIの出力形式が不正でした。もう一度お試しください。");
-            }
-        }
+function syntaxHighlight(json) {
+    json = json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return json.replace(/(\"(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*\"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+        let cls = 'text-slate-300';
+        if (/^"/.test(m)) cls = /:$/.test(m) ? 'json-key' : 'json-string';
+        else if (/true|false/.test(m)) cls = 'json-boolean';
+        else if (/null/.test(m)) cls = 'json-null';
+        return `<span class="${cls}">${m}</span>`;
+    });
+}
 
-        // --- Utility Functions ---
-        function setLoadingState(isLoading) {
-            isGenerating = isLoading;
-            els.promptInput.disabled = isLoading;
-            
-            if (isLoading) {
-                els.generateBtn.disabled = true;
-                els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
-                lucide.createIcons();
-            } else {
-                updateRateLimitUI(); 
-            }
-        }
+function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 
-        function showError(message) {
-            els.statusArea.classList.remove('hidden');
-            els.retryMessage.classList.add('hidden');
-            els.errorMessage.classList.remove('hidden');
-            els.errorText.textContent = message;
-        }
-
-        function copyToClipboard(textToCopy, iconElement, textElement) {
-            if (!textToCopy) return;
-            
-            const performCopy = () => {
-                const textArea = document.createElement("textarea");
-                textArea.value = textToCopy;
-                textArea.style.position = "absolute";
-                textArea.style.left = "-999999px";
-                document.body.prepend(textArea);
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    return true;
-                } catch (error) {
-                    return false;
-                } finally {
-                    textArea.remove();
-                }
-            };
-
-            const showSuccess = () => {
-                iconElement.setAttribute('data-lucide', 'check');
-                iconElement.classList.add('text-grok-500');
-                textElement.textContent = 'コピー済';
-                lucide.createIcons();
-                
-                setTimeout(() => {
-                    iconElement.setAttribute('data-lucide', 'copy');
-                    iconElement.classList.remove('text-grok-500');
-                    textElement.textContent = 'コピー';
-                    lucide.createIcons();
-                }, 2000);
-            };
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(textToCopy)
-                    .then(() => showSuccess())
-                    .catch(() => {
-                        if (performCopy()) showSuccess();
-                    });
-            } else {
-                if (performCopy()) showSuccess();
-            }
-        }
-
-        // 簡易JSONシンタックスハイライト
-        function syntaxHighlight(json) {
-            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                let cls = 'text-slate-300';
-                if (/^"/.test(match)) {
-                    if (/:$/.test(match)) {
-                        cls = 'json-key';
-                    } else {
-                        cls = 'json-string';
-                    }
-                } else if (/true|false/.test(match)) {
-                    cls = 'json-boolean';
-                } else if (/null/.test(match)) {
-                    cls = 'json-null';
-                }
-                return '<span class="' + cls + '">' + match + '</span>';
-            });
-        }
-
-        // Run Init
-        document.addEventListener('DOMContentLoaded', init);
-
-    </script>
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
