@@ -30,6 +30,12 @@
         /* キー管理モーダル */
         #keys-modal{display:none}
         #keys-modal.show{display:flex}
+        /* 被写体プリセットモーダル */
+        #subject-modal{display:none}
+        #subject-modal.show{display:flex}
+        .subject-card{transition:all .15s;cursor:pointer}
+        .subject-card:hover{border-color:#14b8a6;background:rgba(20,184,166,.07)}
+        .subject-card.selected{border-color:#14b8a6;background:rgba(20,184,166,.12)}
         /* 履歴アイテム */
         .history-item{cursor:pointer;transition:background .15s}
         .history-item:hover{background:rgba(71,85,105,.4)}
@@ -43,49 +49,155 @@
 
 <!-- ===== HEADER ===== -->
 <header class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <!-- メインヘッダー行 -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
         <div class="flex items-center gap-3 flex-shrink-0">
-            <i data-lucide="sparkles" class="text-grok-500 w-6 h-6"></i>
-            <h1 class="text-xl font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
+            <i data-lucide="sparkles" class="text-grok-500 w-5 h-5"></i>
+            <h1 class="text-lg font-bold bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Grok Prompt Gen</h1>
         </div>
-
-        <!-- モデル切り替え -->
-        <div class="flex items-center gap-2">
-            <i data-lucide="cpu" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
-            <select id="model-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:border-grok-500 text-slate-200">
-                <option value="gemini-2.5-flash-lite">2.5 Flash-Lite ⚡ (速/安)</option>
-                <option value="gemini-2.5-flash">2.5 Flash 🔥 (バランス)</option>
-                <option value="gemini-2.5-pro">2.5 Pro 💎 (最高品質)</option>
-                <option value="gemini-2.0-flash">2.0 Flash (安定版)</option>
-                <option value="gemini-2.0-flash-lite">2.0 Flash-Lite (軽量)</option>
-            </select>
-        </div>
-
-        <!-- アスペクト比 -->
-        <div class="flex items-center gap-2">
-            <i data-lucide="frame" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
-            <select id="aspect-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:border-grok-500 text-slate-200">
-                <option value="2:3">2:3 — 一眼レフ縦 🎞️</option>
-                <option value="3:2">3:2 — 一眼レフ横 📸</option>
-                <option value="1:1">1:1 — 正方形 ⬜</option>
-                <option value="9:16">9:16 — 縦長ポートレート 📱</option>
-                <option value="16:9">16:9 — 横長ワイド 🖥️</option>
-            </select>
-        </div>
-
-        <!-- APIキー管理ボタン -->
         <div class="flex items-center gap-3">
-            <button id="open-keys-btn" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-sm px-3 py-1.5 rounded-md transition-colors">
-                <i data-lucide="key-round" class="w-4 h-4 text-grok-500"></i>
-                <span>APIキー管理</span>
-                <span id="key-count-badge" class="bg-grok-600 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
+            <!-- モデル選択 -->
+            <div class="flex items-center gap-1.5">
+                <i data-lucide="cpu" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
+                <select id="model-select" class="bg-slate-800 border border-slate-700 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                    <option value="gemini-2.5-flash-lite">2.5 Flash-Lite ⚡</option>
+                    <option value="gemini-2.5-flash">2.5 Flash 🔥</option>
+                    <option value="gemini-2.5-pro">2.5 Pro 💎</option>
+                    <option value="gemini-2.0-flash">2.0 Flash</option>
+                    <option value="gemini-2.0-flash-lite">2.0 Flash-Lite</option>
+                </select>
+            </div>
+            <!-- APIキー管理 -->
+            <button id="open-keys-btn" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-xs px-2.5 py-1.5 rounded-md transition-colors">
+                <i data-lucide="key-round" class="w-3.5 h-3.5 text-grok-500"></i>
+                <span>APIキー</span>
+                <span id="key-count-badge" class="bg-grok-600 text-white text-[10px] rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
             </button>
             <span id="active-key-label" class="text-xs text-slate-500 hidden">使用中: <span id="active-key-name" class="text-grok-500"></span></span>
         </div>
     </div>
 
-    <!-- レート制限バー (アクティブキー分) -->
-    <div class="w-full h-1 bg-slate-800 relative group cursor-help" title="現在のAPIキーの使用制限">
+    <!-- サブバー: アスペクト比 / スタイルプリセット / 被写体プリセット -->
+    <div class="border-t border-slate-800 bg-slate-950/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-10 flex items-center gap-4 overflow-x-auto">
+            <!-- アスペクト比 -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="frame" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="aspect-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
+                    <option value="2:3">2:3 縦</option>
+                    <option value="3:2">3:2 横</option>
+                    <option value="1:1" selected>1:1 正方形</option>
+                    <option value="9:16">9:16 縦長</option>
+                    <option value="16:9">16:9 横長</option>
+                </select>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- スタイルプリセット -->
+            <div id="preset-buttons" class="flex items-center gap-1.5 flex-shrink-0">
+                <button data-preset="photorealism" class="preset-btn active border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">📷 超リアル実写</button>
+                <button data-preset="anime" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎌 アニメ</button>
+                <button data-preset="cinematic" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🎬 シネマ</button>
+                <button data-preset="fantasy" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">🔮 ファンタジー</button>
+                <button data-preset="product" class="preset-btn border border-slate-600 rounded-full px-2.5 py-0.5 text-xs text-slate-300 whitespace-nowrap">📦 商品</button>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- 被写体プリセット -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button id="open-subjects-btn" class="flex items-center gap-1.5 hover:text-grok-500 text-xs text-slate-400 transition-colors whitespace-nowrap">
+                    <i data-lucide="user-round" class="w-3.5 h-3.5"></i>
+                    <span>被写体</span>
+                    <span id="subject-count-badge" class="bg-slate-700 text-slate-300 text-[10px] rounded-full px-1.5 py-0.5 min-w-[1.25rem] text-center">0</span>
+                </button>
+                <!-- メイン被写体表示 -->
+                <span id="active-main-label" class="hidden items-center gap-1 text-xs">
+                    <i data-lucide="user" class="w-3 h-3 text-amber-400"></i>
+                    <span class="text-amber-400" id="active-main-name"></span>
+                    <button id="clear-main-btn" class="text-slate-600 hover:text-red-400 transition-colors text-[10px]">✕</button>
+                </span>
+                <!-- サブ被写体表示 -->
+                <span id="active-sub-label" class="hidden items-center gap-1 text-xs">
+                    <i data-lucide="user-plus" class="w-3 h-3 text-purple-400"></i>
+                    <span class="text-purple-400" id="active-sub-name"></span>
+                    <button id="clear-sub-btn" class="text-slate-600 hover:text-red-400 transition-colors text-[10px]">✕</button>
+                </span>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- カメラ高さ・距離 -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="camera" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="camera-angle-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
+                    <option value="">アングル: 指定なし</option>
+                    <optgroup label="── 高さ ──">
+                        <option value="eye level shot">👁️ アイレベル（目線）</option>
+                        <option value="low angle shot">⬇️ ローアングル（見上げ）</option>
+                        <option value="worm's eye view">🐛 虫の目（超ローアングル）</option>
+                        <option value="ground level perspective">🏔️ グラウンドレベル</option>
+                        <option value="high angle shot">⬆️ ハイアングル（見下ろし）</option>
+                        <option value="bird's eye view">🦅 鳥瞰図（真上に近い）</option>
+                        <option value="top-down perspective">🔝 トップダウン（真上）</option>
+                        <option value="overhead view">📐 オーバーヘッド</option>
+                    </optgroup>
+                    <optgroup label="── 距離 ──">
+                        <option value="extreme close-up">🔍 超クローズアップ</option>
+                        <option value="close-up shot">📷 クローズアップ</option>
+                        <option value="medium shot">🧍 ミディアム（腰上）</option>
+                        <option value="wide shot">🌅 ワイド（引き）</option>
+                        <option value="long shot">🏞️ ロング（全身＋背景）</option>
+                        <option value="extreme long shot">🌐 超ロング（遠景）</option>
+                    </optgroup>
+                    <optgroup label="── 組み合わせ ──">
+                        <option value="low angle close-up">⬇️🔍 ローアングル＋クローズアップ</option>
+                        <option value="high angle wide shot">⬆️🌅 ハイアングル＋ワイド</option>
+                        <option value="bird's eye view medium shot">🦅🧍 鳥瞰図＋ミディアム</option>
+                        <option value="worm's eye view long shot">🐛🏞️ 虫の目＋ロング</option>
+                        <option value="overhead extreme close-up">🔝🔍 真上＋超クローズアップ</option>
+                        <option value="ground level wide angle">🏔️🌅 グラウンド＋ワイド</option>
+                        <option value="looking up from close distance">📸 近距離から見上げ</option>
+                        <option value="looking down from a distance">📸 遠距離から見下ろし</option>
+                        <option value="tilted low angle medium shot">↗️ ダッチ＋ローアングル</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- 画角（フレーミング） -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="scan" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="framing-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
+                    <option value="">画角: 指定なし</option>
+                    <optgroup label="── 全身・広め ──">
+                        <option value="full body shot">🧍 全身ショット</option>
+                        <option value="full length portrait">🖼️ フルレングスポートレート</option>
+                        <option value="panoramic wide shot">🌐 パノラマワイド</option>
+                        <option value="establishing shot">🏙️ エスタブリッシング（場所説明）</option>
+                    </optgroup>
+                    <optgroup label="── 上半身・バスト ──">
+                        <option value="waist-up shot">👗 腰上ショット</option>
+                        <option value="bust-up shot">👕 バストアップ</option>
+                        <option value="upper body framing">💪 上半身フレーミング</option>
+                        <option value="medium close-up">📸 ミディアムクローズアップ</option>
+                    </optgroup>
+                    <optgroup label="── 顔・寄り ──">
+                        <option value="headshot">🙂 ヘッドショット</option>
+                        <option value="face close-up">😊 顔のクローズアップ</option>
+                        <option value="extreme close-up on eyes">👁️ 目のクローズアップ</option>
+                        <option value="macro shot">🔬 マクロショット</option>
+                        <option value="detail close-up">🔎 ディテールクローズアップ</option>
+                    </optgroup>
+                    <optgroup label="── 特殊アングル ──">
+                        <option value="three-quarter view">↗️ スリークォータービュー</option>
+                        <option value="profile shot">👤 横顔（プロファイル）</option>
+                        <option value="over-the-shoulder shot">🫂 オーバー・ザ・ショルダー</option>
+                        <option value="dutch angle">📐 ダッチアングル（斜め）</option>
+                        <option value="fisheye lens effect">🐟 魚眼レンズ</option>
+                        <option value="front-facing shot">🎯 正面ショット</option>
+                    </optgroup>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- レート制限バー -->
+    <div class="w-full h-0.5 bg-slate-800 relative group cursor-help" title="現在のAPIキーの使用制限">
         <div id="rate-limit-bar" class="h-full bg-grok-500 transition-all duration-500 ease-in-out w-0"></div>
         <div class="absolute top-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-xs py-1 px-2 rounded shadow-lg pointer-events-none z-50 flex items-center gap-2">
             <span id="rate-limit-text">0 / 5</span>
@@ -126,26 +238,296 @@
     </div>
 </div>
 
+<!-- ===== 被写体プリセット管理モーダル ===== -->
+<div id="subject-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
+  <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl mx-4 shadow-2xl flex flex-col max-h-[92vh]">
+    <!-- ヘッダー -->
+    <div class="flex items-center justify-between p-4 border-b border-slate-800 flex-shrink-0">
+      <h2 class="font-semibold text-base flex items-center gap-2">
+        <i data-lucide="user-round" class="w-5 h-5 text-grok-500"></i> 被写体プリセット管理
+      </h2>
+      <div class="flex items-center gap-3">
+        <!-- エクスポート / インポート -->
+        <button id="export-subjects-btn" class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 rounded-md transition-colors">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i> エクスポート
+        </button>
+        <label class="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 rounded-md transition-colors cursor-pointer">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i> インポート
+          <input type="file" id="import-subjects-input" accept=".json" class="hidden">
+        </label>
+        <button id="close-subjects-btn" class="text-slate-400 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- 左: 一覧 -->
+      <div class="w-52 border-r border-slate-800 flex flex-col flex-shrink-0">
+        <div class="p-2.5 border-b border-slate-800">
+          <button id="new-subject-btn" class="w-full bg-grok-600 hover:bg-grok-500 text-white py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新規作成
+          </button>
+        </div>
+        <div id="subject-list" class="flex-1 overflow-y-auto p-1.5 flex flex-col gap-1">
+          <p id="subject-list-empty" class="text-xs text-slate-500 text-center py-4">プリセットがありません</p>
+        </div>
+      </div>
+
+      <!-- 右: フォーム -->
+      <div class="flex-1 overflow-y-auto" id="subject-form-area">
+        <div id="subject-form-placeholder" class="flex flex-col items-center justify-center h-full text-slate-500 text-sm gap-2 py-12">
+          <i data-lucide="user-round" class="w-10 h-10 text-slate-700"></i>
+          <p>左から選択するか「新規作成」を押してください</p>
+        </div>
+
+        <div id="subject-form" class="hidden p-4 flex flex-col gap-3">
+          <!-- プリセット名 -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">プリセット名 <span class="text-red-400">*</span></label>
+            <input type="text" id="sf-name" placeholder="例: 黒髪ロング・清楚系 20代" maxlength="30"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-grok-500 placeholder-slate-500">
+          </div>
+
+          <!-- セクション: 基本情報 -->
+          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1">基本情報</p>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">年齢帯</label>
+              <select id="sf-age" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="18-22 years old">18〜22歳</option>
+                <option value="early 20s" selected>20代前半</option>
+                <option value="mid 20s">20代半ば</option>
+                <option value="late 20s">20代後半</option>
+                <option value="early 30s">30代前半</option>
+                <option value="mid 30s">30代半ば</option>
+                <option value="late 30s">30代後半</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">ファッション系統</label>
+              <select id="sf-fashion" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="casual streetwear">カジュアル・ストリート</option>
+                <option value="clean feminine, ojou-style">清楚・お嬢様系</option>
+                <option value="gyaru, flashy fashion">ギャル系</option>
+                <option value="mori girl, natural kei">森ガール・ナチュラル系</option>
+                <option value="mode, avant-garde">モード系</option>
+                <option value="office lady, smart casual">オフィスカジュアル・OL</option>
+                <option value="jirai kei, dark feminine">地雷系・量産型</option>
+                <option value="sporty, athletic wear">スポーツ・アクティブ</option>
+                <option value="lingerie, boudoir style">ランジェリー・バドワール</option>
+                <option value="school uniform, JK style">制服・JK系</option>
+                <option value="cosplay, costume">コスプレ・コスチューム</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">キャラ印象</label>
+              <select id="sf-vibe" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="cool, aloof">クール・ミステリアス</option>
+                <option value="cheerful, energetic">元気・明るい</option>
+                <option value="intellectual, composed">知的・落ち着き</option>
+                <option value="sweet, innocent">天然・可愛い系</option>
+                <option value="confident, bold">自信家・大人っぽい</option>
+                <option value="shy, introverted">内気・控えめ</option>
+                <option value="sexy, alluring">セクシー・艶やか</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- セクション: 顔 -->
+          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1 mt-1">顔の特徴</p>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">顔の系統・メイク</label>
+              <select id="sf-face-vibe" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="natural soft glam, light eyeliner, subtle blush, muted rosy lips">清楚・ナチュラル</option>
+                <option value="K-beauty glass-skin base, soft taupe-brown liner, glossy gradient nude-pink lips" selected>K-beauty・透明感</option>
+                <option value="defined eyeliner and lashes, pink-red lips, minimal blush">ガーリー・可愛い系</option>
+                <option value="porcelain foundation, glossy reddish lips, defined eyeliner">クール・エッジー</option>
+                <option value="natural, minimal makeup, no-makeup look">すっぴん風</option>
+                <option value="bold smoky eye, matte red lips, structured contour">ゴージャス・セクシー</option>
+                <option value="gradient lips, straight brows, straight lashes, ulzzang style">ウルジャン・韓国風</option>
+                <option value="gyaru makeup, thick lashes, deep contour, bright eyeshadow">ギャルメイク</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">目の形</label>
+              <select id="sf-eyes" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="single eyelid, monolid, soft gaze">一重まぶた</option>
+                <option value="natural double eyelid">自然な二重</option>
+                <option value="deep double eyelid, wide eyes">はっきり二重・大きな目</option>
+                <option value="inner double eyelid, subtle crease">奥二重</option>
+                <option value="upturned eyes, cat-eye shape">たれ目・猫目</option>
+                <option value="downturned eyes, droopy lids, puppy eyes">たれ目・ぱっちり</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">輪郭</label>
+              <select id="sf-jawline" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="small face, soft V-line jawline">小顔・Vライン</option>
+                <option value="round face, soft cheeks">丸顔・ふっくら頬</option>
+                <option value="oval face, balanced proportions">卵型・バランス系</option>
+                <option value="sharp jawline, defined cheekbones">シャープ・面長系</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- セクション: 髪 -->
+          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1 mt-1">ヘアスタイル</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">髪色</label>
+              <select id="sf-hair-color" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="jet black" selected>黒</option>
+                <option value="dark brown to black">ダークブラウン〜黒</option>
+                <option value="dark brown">ダークブラウン</option>
+                <option value="medium brown, caramel highlights">キャラメルブラウン</option>
+                <option value="ash brown, cool-toned">アッシュブラウン</option>
+                <option value="warm chestnut brown">栗色・チェスナット</option>
+                <option value="dark blonde">ダークブロンド</option>
+                <option value="bleached blonde, platinum">ブリーチ・プラチナ</option>
+                <option value="silver ash, pearl tone">シルバーアッシュ</option>
+                <option value="rose gold, pink tint">ピンク系・ローズゴールド</option>
+                <option value="pastel lavender, dyed">パステルカラー・ラベンダー</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">髪型</label>
+              <select id="sf-hair-style" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="long straight, middle part">ロングストレート・センター分け</option>
+                <option value="long wavy, loose" selected>ロングウェーブ・ゆるふわ</option>
+                <option value="straight hair with wispy bangs, see-through fringe">ストレート・シースルー前髪</option>
+                <option value="straight hair with blunt bangs">ストレート・ぱっつん前髪</option>
+                <option value="short bob with blunt bangs">ショートボブ・ぱっつん</option>
+                <option value="shoulder-length lob, natural wave">ミディアム・ナチュラルウェーブ</option>
+                <option value="wolf cut, layered, curtain bangs">ウルフカット・カーテンバング</option>
+                <option value="hime cut, straight with side panels">姫カット</option>
+                <option value="sleek low bun, center part, face-framing strands">ローバン・センター分け</option>
+                <option value="high ponytail, sleek">高めポニーテール</option>
+                <option value="center-parted twin braids">ツインブレイド</option>
+                <option value="twin tails, high pigtails">ツインテール</option>
+                <option value="short pixie cut, textured">ショートカット・ピクシー</option>
+                <option value="side-swept, voluminous curls">サイドスウェプト・巻き髪</option>
+                <option value="natural perm, loose curls">パーマ・ゆるカール</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- セクション: 体型・スペック -->
+          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1 mt-1">体型・スペック</p>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">体型</label>
+              <select id="sf-frame" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="slim, petite, delicate frame">華奢・小柄</option>
+                <option value="slim" selected>スリム</option>
+                <option value="slim to average with soft curves">スリム〜普通・ソフトカーブ</option>
+                <option value="average, toned and athletic">普通・引き締まり</option>
+                <option value="tall, lean model figure">モデル体型・高身長</option>
+                <option value="curvy, hourglass figure, full bust and hips">グラマラス・グラビア系</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">身長</label>
+              <select id="sf-height" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="very petite, around 148-152cm tall">低め（148〜152cm）</option>
+                <option value="petite, around 153-157cm tall">やや低め（153〜157cm）</option>
+                <option value="average height, around 158-162cm tall" selected>普通（158〜162cm）</option>
+                <option value="slightly tall, around 163-167cm tall">やや高め（163〜167cm）</option>
+                <option value="tall, around 168-173cm tall">高め（168〜173cm）</option>
+                <option value="very tall, model-height, over 174cm">モデル身長（174cm〜）</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">カップサイズ</label>
+              <select id="sf-bust" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="very small, flat chest, A-cup">Aカップ・ほぼフラット</option>
+                <option value="small bust, B-cup">Bカップ・小ぶり</option>
+                <option value="average bust, C-cup" selected>Cカップ・標準</option>
+                <option value="full bust, D-cup">Dカップ・ふっくら</option>
+                <option value="large bust, E-cup">Eカップ・豊満</option>
+                <option value="very large bust, F-cup or larger">F〜カップ・グラビア系</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">肌トーン</label>
+              <select id="sf-skin-tone" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="cold white, pale porcelain skin">色白・磁器肌</option>
+                <option value="fair with a cool-neutral undertone" selected>色白・クールトーン</option>
+                <option value="light warm beige, healthy glow">ライトベージュ・健康的</option>
+                <option value="warm light beige, peachy tone">ウォームベージュ・桃色</option>
+                <option value="natural tan, summer glow">小麦色・健康的日焼け</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">ヒップ・脚</label>
+              <select id="sf-hips" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="slim hips, slender legs, thigh gap">細めヒップ・スレンダー脚</option>
+                <option value="average hips, toned legs">普通ヒップ・引き締まった脚</option>
+                <option value="wide hips, full thighs, curvy lower body">広めヒップ・むっちり太もも</option>
+                <option value="perky round hips, long slim legs">丸みのあるヒップ・長い脚</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">ウエスト</label>
+              <select id="sf-waist" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="very narrow waist, extreme hourglass">極細ウエスト</option>
+                <option value="narrow waist, defined curves">細めウエスト</option>
+                <option value="average waist, natural shape" selected>普通ウエスト</option>
+                <option value="soft waist, gentle taper">ソフトウエスト</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 自由記述 -->
+          <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1 mt-1">追加設定</p>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">追加の特徴・こだわり <span class="text-slate-500">（英語推奨）</span></label>
+            <textarea id="sf-extra" rows="2" placeholder="例: small beauty mark under left eye, slightly upturned nose, soft jawline"
+              class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-grok-500 placeholder-slate-500 resize-none"></textarea>
+          </div>
+
+          <!-- プレビュー -->
+          <div class="bg-slate-800/50 border border-slate-700/50 rounded-lg p-3">
+            <p class="text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1"><i data-lucide="eye" class="w-3.5 h-3.5"></i> プロンプトプレビュー</p>
+            <p id="sf-preview" class="text-xs text-slate-300 leading-relaxed font-mono break-all"></p>
+          </div>
+
+          <!-- ボタン -->
+          <div class="flex gap-2 pb-2">
+            <button id="sf-save-btn" class="flex-1 bg-grok-600 hover:bg-grok-500 text-white py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="save" class="w-3.5 h-3.5"></i> 保存
+            </button>
+            <button id="sf-delete-btn" class="hidden bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 削除
+            </button>
+            <button id="sf-apply-main-btn" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="user" class="w-3.5 h-3.5"></i> メイン適用
+            </button>
+            <button id="sf-apply-sub-btn" class="bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 py-2 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> サブ適用
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MAIN ===== -->
 <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
 
     <!-- 左カラム -->
     <div class="lg:col-span-4 flex flex-col gap-4">
         <div class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm">
-
-            <!-- プリセット選択 -->
-            <div class="mb-4">
-                <label class="block text-xs font-medium text-slate-400 mb-2 flex items-center gap-1.5">
-                    <i data-lucide="layout-template" class="w-3.5 h-3.5"></i> スタイルプリセット
-                </label>
-                <div id="preset-buttons" class="flex flex-wrap gap-2">
-                    <button data-preset="photorealism" class="preset-btn active border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">📷 超リアル実写</button>
-                    <button data-preset="anime" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🎌 アニメ・イラスト</button>
-                    <button data-preset="cinematic" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🎬 シネマティック</button>
-                    <button data-preset="fantasy" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">🔮 ファンタジー</button>
-                    <button data-preset="product" class="preset-btn border border-slate-600 rounded-full px-3 py-1 text-xs text-slate-300">📦 商品撮影</button>
-                </div>
-            </div>
 
             <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
                 <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i> 描きたい画像のイメージ
@@ -155,6 +537,27 @@
                 placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
 
             <!-- ステータスエリア -->
+            <!-- ランダムプレビューパネル -->
+            <div id="random-preview-panel" class="hidden mt-3 bg-slate-800/80 border border-amber-500/40 rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                        <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> ランダム抽選結果
+                    </p>
+                    <button id="random-preview-close" class="text-slate-500 hover:text-slate-300 transition-colors">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+                <div id="random-preview-items" class="flex flex-col gap-1 mb-3 text-xs text-slate-300"></div>
+                <div class="flex gap-2">
+                    <button id="random-reroll-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-300 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> 再抽選
+                    </button>
+                    <button id="random-confirm-btn" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="zap" class="w-3 h-3"></i> これで生成
+                    </button>
+                </div>
+            </div>
+
             <div id="status-area" class="mt-3 hidden">
                 <div id="retry-message" class="flex items-center gap-2 text-amber-400 bg-amber-400/10 border border-amber-400/20 p-2.5 rounded-lg text-sm">
                     <i data-lucide="loader-2" class="w-4 h-4 spinner"></i>
@@ -166,11 +569,17 @@
                 </div>
             </div>
 
-            <button id="generate-btn" disabled
-                class="mt-4 w-full bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
-                <i data-lucide="zap" class="w-4 h-4"></i>
-                <span>プロンプトを生成</span>
-            </button>
+            <div class="mt-4 flex gap-2">
+                <button id="generate-btn" disabled
+                    class="flex-1 bg-grok-600 hover:bg-grok-500 text-white py-2.5 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-grok-600 shadow-lg shadow-grok-500/20">
+                    <i data-lucide="zap" class="w-4 h-4"></i><span>生成</span>
+                </button>
+                <button id="random-btn"
+                    class="bg-amber-600/80 hover:bg-amber-500 text-white py-2.5 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20" title="シチュエーション・服装・カメラをランダムに変えて生成">
+                    <i data-lucide="shuffle" class="w-4 h-4"></i><span class="text-sm">ランダム</span>
+                </button>
+            </div>
+            <div id="random-seed-display" class="hidden mt-2 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap"></div>
             <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
         </div>
 
@@ -465,6 +874,31 @@ const els = {
     copyJaText:   document.getElementById('copy-ja-text'),
 
     rateLimitBar:   document.getElementById('rate-limit-bar'),
+    openSubjectsBtn:    document.getElementById('open-subjects-btn'),
+    closeSubjectsBtn:   document.getElementById('close-subjects-btn'),
+    subjectModal:       document.getElementById('subject-modal'),
+    subjectCountBadge:  document.getElementById('subject-count-badge'),
+    activeSubjectLabel: document.getElementById('active-subject-label'),
+    activeSubjectName:  document.getElementById('active-subject-name'),
+    clearSubjectBtn:    document.getElementById('clear-subject-btn'),
+    newSubjectBtn:      document.getElementById('new-subject-btn'),
+    subjectList:        document.getElementById('subject-list'),
+    subjectListEmpty:   document.getElementById('subject-list-empty'),
+    subjectFormArea:    document.getElementById('subject-form-area'),
+    subjectFormPlaceholder: document.getElementById('subject-form-placeholder'),
+    subjectForm:        document.getElementById('subject-form'),
+    sfName:             document.getElementById('sf-name'),
+    sfAge:              document.getElementById('sf-age'),
+    sfFrame:            document.getElementById('sf-frame'),
+    sfHairColor:        document.getElementById('sf-hair-color'),
+    sfHairStyle:        document.getElementById('sf-hair-style'),
+    sfSkinTone:         document.getElementById('sf-skin-tone'),
+    sfFaceVibe:         document.getElementById('sf-face-vibe'),
+    sfExtra:            document.getElementById('sf-extra'),
+    sfPreview:          document.getElementById('sf-preview'),
+    sfSaveBtn:          document.getElementById('sf-save-btn'),
+    sfDeleteBtn:        document.getElementById('sf-delete-btn'),
+    sfApplyBtn:         document.getElementById('sf-apply-btn'),
     rateLimitText:  document.getElementById('rate-limit-text'),
     rateLimitReset: document.getElementById('rate-limit-reset'),
 
@@ -476,10 +910,56 @@ const els = {
 // ===================== 状態 =====================
 let outputData = { json: null, en: null, ja: null };
 let isGenerating = false;
+        let activeSubjectId = null; // 現在適用中の被写体プリセットID
+        let editingSubjectId = null; // フォームで編集中のID
 let currentPreset = 'photorealism';
 
 // ===================== 初期化 =====================
 function init() {
+    // DOM要素を確実に再取得（scriptがhead内のため els定義時はDOM未構築の場合がある）
+    els.modelSelect       = document.getElementById('model-select');
+    els.aspectSelect      = document.getElementById('aspect-select');
+    els.promptInput       = document.getElementById('prompt-input');
+    els.generateBtn       = document.getElementById('generate-btn');
+    els.statusArea        = document.getElementById('status-area');
+    els.retryMessage      = document.getElementById('retry-message');
+    els.retryText         = document.getElementById('retry-text');
+    els.errorMessage      = document.getElementById('error-message');
+    els.errorText         = document.getElementById('error-text');
+    els.emptyState        = document.getElementById('empty-state');
+    els.explanationContainer = document.getElementById('explanation-container');
+    els.explanationText   = document.getElementById('explanation-text');
+    els.plainTextContainer = document.getElementById('plain-text-container');
+    els.englishOutput     = document.getElementById('english-output');
+    els.japaneseOutput    = document.getElementById('japanese-output');
+    els.jsonOutput        = document.getElementById('json-output');
+    els.copyJsonBtn       = document.getElementById('copy-json-btn');
+    els.copyJsonIcon      = document.getElementById('copy-json-icon');
+    els.copyJsonText      = document.getElementById('copy-json-text');
+    els.copyEnBtn         = document.getElementById('copy-en-btn');
+    els.copyEnIcon        = document.getElementById('copy-en-icon');
+    els.copyEnText        = document.getElementById('copy-en-text');
+    els.copyJaBtn         = document.getElementById('copy-ja-btn');
+    els.copyJaIcon        = document.getElementById('copy-ja-icon');
+    els.copyJaText        = document.getElementById('copy-ja-text');
+    els.rateLimitBar      = document.getElementById('rate-limit-bar');
+    els.rateLimitText     = document.getElementById('rate-limit-text');
+    els.rateLimitReset    = document.getElementById('rate-limit-reset');
+    els.openKeysBtn       = document.getElementById('open-keys-btn');
+    els.closeKeysBtn      = document.getElementById('close-keys-btn');
+    els.keysModal         = document.getElementById('keys-modal');
+    els.keysList          = document.getElementById('keys-list');
+    els.addKeyBtn         = document.getElementById('add-key-btn');
+    els.keyNameInput      = document.getElementById('key-name-input');
+    els.keyValueInput     = document.getElementById('key-value-input');
+    els.keyCountBadge     = document.getElementById('key-count-badge');
+    els.activeKeyLabel    = document.getElementById('active-key-label');
+    els.activeKeyName     = document.getElementById('active-key-name');
+    els.historyList       = document.getElementById('history-list');
+    els.clearHistoryBtn   = document.getElementById('clear-history-btn');
+    els.presetButtons     = document.querySelectorAll('.preset-btn');
+    els.randomBtn         = document.getElementById('random-btn');
+
     // モデル復元
     const savedModel = localStorage.getItem(MODEL_KEY);
     if (savedModel) els.modelSelect.value = savedModel;
@@ -489,6 +969,16 @@ function init() {
         const savedAspect = localStorage.getItem(ASPECT_KEY);
         if (savedAspect) els.aspectSelect.value = savedAspect;
         els.aspectSelect.addEventListener('change', () => localStorage.setItem(ASPECT_KEY, els.aspectSelect.value));
+
+        // カメラアングル・画角 復元
+        const camAngleEl  = document.getElementById('camera-angle-select');
+        const framingEl   = document.getElementById('framing-select');
+        const savedAngle  = localStorage.getItem('grok_gen_camera_angle');
+        const savedFrame  = localStorage.getItem('grok_gen_framing');
+        if (savedAngle && camAngleEl)  camAngleEl.value  = savedAngle;
+        if (savedFrame && framingEl)   framingEl.value   = savedFrame;
+        camAngleEl?.addEventListener('change', () => localStorage.setItem('grok_gen_camera_angle', camAngleEl.value));
+        framingEl?.addEventListener('change',  () => localStorage.setItem('grok_gen_framing',      framingEl.value));
 
     // プリセット復元
     const savedPreset = localStorage.getItem(PRESET_KEY) || 'photorealism';
@@ -509,12 +999,22 @@ function init() {
 
     // 生成
     els.generateBtn.addEventListener('click', handleGenerate);
+    els.randomBtn = document.getElementById('random-btn');
+    if (els.randomBtn) {
+        els.randomBtn.addEventListener('click', () => handleRandomGenerate(null));
+    }
+    // ランダムプレビューパネルのボタン
+    document.getElementById('random-confirm-btn')?.addEventListener('click', executeRandom);
+    document.getElementById('random-reroll-btn')?.addEventListener('click', rollRandomSeed);
+    document.getElementById('random-preview-close')?.addEventListener('click', () => {
+        document.getElementById('random-preview-panel')?.classList.add('hidden');
+    });
     els.promptInput.addEventListener('keydown', e => {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !els.generateBtn.disabled && !isGenerating) handleGenerate();
     });
 
     // コピー
-    els.copyJsonBtn.addEventListener('click', () => copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText));
+    els.copyJsonBtn.addEventListener('click', () => { if (!outputData.json) return; copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText); });
     els.copyEnBtn.addEventListener('click', () => copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText));
     els.copyJaBtn.addEventListener('click', () => copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText));
 
@@ -525,6 +1025,9 @@ function init() {
     // レート制限バー
     updateRateLimitUI();
     setInterval(updateRateLimitUI, 1000);
+
+    // 被写体プリセット（必ずDOMContentLoaded後＝ここで初期化）
+    initSubjectPresets();
 }
 
 // ===================== プリセット =====================
@@ -626,7 +1129,7 @@ function updateKeyUI() {
         els.activeKeyLabel.classList.remove('hidden');
         els.activeKeyName.textContent = keys[idx]?.name || 'Key' + (idx + 1);
         els.apiWarningText.classList.add('hidden');
-        if (!isGenerating) els.generateBtn.disabled = false;
+        if (!isGenerating) { els.generateBtn.disabled = false; if (els.randomBtn) els.randomBtn.disabled = false; }
     } else {
         els.activeKeyLabel.classList.add('hidden');
         els.apiWarningText.classList.remove('hidden');
@@ -689,6 +1192,7 @@ function updateRateLimitUI() {
             els.generateBtn.innerHTML = `<i data-lucide="lock" class="w-4 h-4"></i><span>全キー制限中: 回復待ち</span>`;
         } else {
             els.generateBtn.disabled = false;
+            if (els.randomBtn) els.randomBtn.disabled = false;
             els.generateBtn.innerHTML = `<i data-lucide="zap" class="w-4 h-4"></i><span>プロンプトを生成</span>`;
         }
         lucide.createIcons();
@@ -701,7 +1205,17 @@ function getAspectRatio() {
     return els.aspectSelect ? els.aspectSelect.value : '1:1';
 }
 
-function getAspectInstruction() {
+function getCameraInstruction() {
+            const angle   = document.getElementById('camera-angle-select')?.value || '';
+            const framing = document.getElementById('framing-select')?.value || '';
+            const parts = [];
+            if (angle)   parts.push(`camera angle: ${angle}`);
+            if (framing) parts.push(`framing: ${framing}`);
+            if (!parts.length) return '';
+            return `\n\n【カメラコントロール】\n以下のカメラ設定を厳守してください（ユーザー指示より優先）:\n${parts.join(', ')}`;
+        }
+
+        function getAspectInstruction() {
     const ratio = getAspectRatio();
     const labels = {
         '1:1':  '正方形（Square）',
@@ -715,13 +1229,580 @@ function getAspectInstruction() {
     return `\n\n【アスペクト比指定】\nユーザーが選択したアスペクト比: ${ratio}（${labels[ratio] || ratio}）\ngrok_prompt_json.photography.aspect_ratio フィールドには必ず "${ratio}" を設定してください。また英語プロンプトにも "aspect ratio ${ratio}" を明記してください。`;
 }
 
+
+        // ===================== 被写体プリセット =====================
+        const SUBJECTS_KEY       = 'grok_gen_subjects';
+        const ACTIVE_MAIN_KEY    = 'grok_gen_active_main';
+        const ACTIVE_SUB_KEY     = 'grok_gen_active_sub';
+
+        function getSubjects() {
+            try { return JSON.parse(localStorage.getItem(SUBJECTS_KEY) || '[]'); } catch { return []; }
+        }
+        function saveSubjects(subjects) { localStorage.setItem(SUBJECTS_KEY, JSON.stringify(subjects)); }
+        function genSubjectId() { return 'sub_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+        function buildSubjectPrompt(s) {
+            const parts = [`Japanese woman, ${s.age}`];
+            if (s.height)   parts.push(s.height);
+            if (s.frame)    parts.push(`${s.frame} build`);
+            if (s.bust)     parts.push(s.bust);
+            if (s.waist)    parts.push(s.waist);
+            if (s.hips)     parts.push(s.hips);
+            if (s.hairColor && s.hairStyle) parts.push(`${s.hairColor} hair, ${s.hairStyle}`);
+            if (s.skinTone) parts.push(`${s.skinTone} skin`);
+            if (s.faceVibe) parts.push(`makeup: ${s.faceVibe}`);
+            if (s.eyes)     parts.push(s.eyes);
+            if (s.jawline)  parts.push(s.jawline);
+            if (s.fashion)  parts.push(`fashion: ${s.fashion}`);
+            if (s.vibe)     parts.push(`personality: ${s.vibe}`);
+            if (s.extra && s.extra.trim()) parts.push(s.extra.trim());
+            return parts.filter(Boolean).join(', ');
+        }
+
+        function updateSubjectPreview() {
+            const s = readForm();
+            els.sfPreview.textContent = buildSubjectPrompt(s);
+        }
+
+        function readForm() {
+            return {
+                id:        editingSubjectId,
+                name:      els.sfName.value.trim(),
+                age:       els.sfAge.value,
+                fashion:   els.sfFashion.value,
+                vibe:      els.sfVibe.value,
+                faceVibe:  els.sfFaceVibe.value,
+                eyes:      els.sfEyes.value,
+                jawline:   els.sfJawline.value,
+                hairColor: els.sfHairColor.value,
+                hairStyle: els.sfHairStyle.value,
+                frame:     els.sfFrame.value,
+                height:    els.sfHeight.value,
+                bust:      els.sfBust.value,
+                skinTone:  els.sfSkinTone.value,
+                hips:      els.sfHips.value,
+                waist:     els.sfWaist.value,
+                extra:     els.sfExtra.value.trim(),
+            };
+        }
+
+        function fillForm(s) {
+            els.sfName.value      = s.name      || '';
+            els.sfAge.value       = s.age       || 'early 20s';
+            els.sfFashion.value   = s.fashion   || '';
+            els.sfVibe.value      = s.vibe      || '';
+            els.sfFaceVibe.value  = s.faceVibe  || 'K-beauty glass-skin base, soft taupe-brown liner, glossy gradient nude-pink lips';
+            els.sfEyes.value      = s.eyes      || '';
+            els.sfJawline.value   = s.jawline   || '';
+            els.sfHairColor.value = s.hairColor || 'jet black';
+            els.sfHairStyle.value = s.hairStyle || 'long wavy, loose';
+            els.sfFrame.value     = s.frame     || 'slim';
+            els.sfHeight.value    = s.height    || '';
+            els.sfBust.value      = s.bust      || '';
+            els.sfSkinTone.value  = s.skinTone  || 'fair with a cool-neutral undertone';
+            els.sfHips.value      = s.hips      || '';
+            els.sfWaist.value     = s.waist     || '';
+            els.sfExtra.value     = s.extra     || '';
+            updateSubjectPreview();
+        }
+
+        function renderSubjectList() {
+            const subjects = getSubjects();
+            els.subjectCountBadge.textContent = subjects.length;
+            const mainId = localStorage.getItem(ACTIVE_MAIN_KEY);
+            const subId  = localStorage.getItem(ACTIVE_SUB_KEY);
+            els.subjectList.innerHTML = '';
+            if (subjects.length === 0) {
+                const p = document.createElement('p');
+                p.className = 'text-xs text-slate-500 text-center py-4';
+                p.textContent = 'プリセットがありません';
+                els.subjectList.appendChild(p);
+                return;
+            }
+            subjects.forEach(s => {
+                const isMain = s.id === mainId;
+                const isSub  = s.id === subId;
+                const div = document.createElement('div');
+                div.className = `subject-card rounded-lg border p-2 ${isMain ? 'border-amber-500/60 bg-amber-500/10' : isSub ? 'border-purple-500/60 bg-purple-500/10' : 'border-slate-700/50'}`;
+                div.innerHTML = `
+                    <p class="text-xs font-medium text-slate-200 truncate">${escapeHtml(s.name)}</p>
+                    <p class="text-xs text-slate-500 truncate mt-0.5">${escapeHtml(s.age)}${s.height ? ' · ' + s.height.split(',')[0] : ''}</p>
+                    <div class="flex gap-1 mt-1">
+                        ${isMain ? '<span class="text-[10px] text-amber-400 bg-amber-500/10 rounded px-1">● メイン</span>' : ''}
+                        ${isSub  ? '<span class="text-[10px] text-purple-400 bg-purple-500/10 rounded px-1">● サブ</span>' : ''}
+                    </div>`;
+                div.addEventListener('click', () => openSubjectForm(s.id));
+                els.subjectList.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function openSubjectForm(id) {
+            editingSubjectId = id;
+            const s = getSubjects().find(x => x.id === id);
+            if (!s) return;
+            fillForm(s);
+            els.sfDeleteBtn.classList.remove('hidden');
+            showSubjectForm();
+            renderSubjectList();
+        }
+
+        function showSubjectForm() {
+            els.subjectFormPlaceholder.classList.add('hidden');
+            els.subjectForm.classList.remove('hidden');
+            els.subjectForm.classList.add('flex');
+        }
+
+        function hideSubjectForm() {
+            els.subjectFormPlaceholder.classList.remove('hidden');
+            els.subjectForm.classList.add('hidden');
+            els.subjectForm.classList.remove('flex');
+            editingSubjectId = null;
+        }
+
+        function saveSubjectForm() {
+            const s = readForm();
+            if (!s.name) { els.sfName.focus(); return null; }
+            s.id = editingSubjectId || genSubjectId();
+            const subjects = getSubjects();
+            const idx = subjects.findIndex(x => x.id === s.id);
+            if (idx >= 0) subjects[idx] = s; else subjects.unshift(s);
+            saveSubjects(subjects);
+            editingSubjectId = s.id;
+            els.sfDeleteBtn.classList.remove('hidden');
+            renderSubjectList();
+            return s;
+        }
+
+        function deleteSubjectForm() {
+            if (!editingSubjectId) return;
+            if (!confirm('このプリセットを削除しますか？')) return;
+            const subjects = getSubjects().filter(x => x.id !== editingSubjectId);
+            saveSubjects(subjects);
+            if (localStorage.getItem(ACTIVE_MAIN_KEY) === editingSubjectId) {
+                localStorage.removeItem(ACTIVE_MAIN_KEY); updateActiveSubjectUI();
+            }
+            if (localStorage.getItem(ACTIVE_SUB_KEY) === editingSubjectId) {
+                localStorage.removeItem(ACTIVE_SUB_KEY); updateActiveSubjectUI();
+            }
+            hideSubjectForm();
+            renderSubjectList();
+        }
+
+        function applySubject(role) { // role: 'main' | 'sub'
+            const s = saveSubjectForm();
+            if (!s) return;
+            const key = role === 'main' ? ACTIVE_MAIN_KEY : ACTIVE_SUB_KEY;
+            localStorage.setItem(key, s.id);
+            updateActiveSubjectUI();
+            renderSubjectList();
+            els.subjectModal.classList.remove('show');
+        }
+
+        function updateActiveSubjectUI() {
+            const subjects = getSubjects();
+            const mainId = localStorage.getItem(ACTIVE_MAIN_KEY);
+            const subId  = localStorage.getItem(ACTIVE_SUB_KEY);
+            const mainS  = subjects.find(x => x.id === mainId);
+            const subS   = subjects.find(x => x.id === subId);
+            // メイン
+            if (mainS) {
+                els.activeMainLabel.classList.remove('hidden');
+                els.activeMainLabel.classList.add('flex');
+                els.activeMainName.textContent = mainS.name;
+            } else {
+                localStorage.removeItem(ACTIVE_MAIN_KEY);
+                els.activeMainLabel.classList.add('hidden');
+                els.activeMainLabel.classList.remove('flex');
+            }
+            // サブ
+            if (subS) {
+                els.activeSubLabel.classList.remove('hidden');
+                els.activeSubLabel.classList.add('flex');
+                els.activeSubName.textContent = subS.name;
+            } else {
+                localStorage.removeItem(ACTIVE_SUB_KEY);
+                els.activeSubLabel.classList.add('hidden');
+                els.activeSubLabel.classList.remove('flex');
+            }
+        }
+
+        function getActiveSubjectInstruction() {
+            const subjects = getSubjects();
+            const mainId = localStorage.getItem(ACTIVE_MAIN_KEY);
+            const subId  = localStorage.getItem(ACTIVE_SUB_KEY);
+            const mainS  = subjects.find(x => x.id === mainId);
+            const subS   = subjects.find(x => x.id === subId);
+            let result = '';
+            if (mainS) {
+                result += `\n\n【メイン被写体プリセット: ${mainS.name}】\n以下の設定を最優先で反映してください（ユーザー指示より優先）。\nPerson A (main subject): ${buildSubjectPrompt(mainS)}\nNote: distinctly East Asian / Japanese facial features. Avoid Western facial structure.`;
+            }
+            if (subS) {
+                result += `\n\n【サブ被写体プリセット: ${subS.name}】\n2ショット構成。Person Bとして以下の設定を反映してください。\nPerson B (secondary subject): ${buildSubjectPrompt(subS)}\nNote: 2-shot composition. Both subjects must appear in frame. Both must have distinctly Japanese facial features.`;
+            }
+            return result;
+        }
+
+        // ── エクスポート / インポート ──
+        function exportSubjects() {
+            const data = {
+                version: 1,
+                exported_at: new Date().toISOString(),
+                subjects: getSubjects(),
+                history: JSON.parse(localStorage.getItem('grok_gen_history') || '[]'),
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `grok_prompt_gen_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importSubjects(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.subjects && Array.isArray(data.subjects)) {
+                        const existing = getSubjects();
+                        const existingIds = new Set(existing.map(x => x.id));
+                        const merged = [...existing, ...data.subjects.filter(x => !existingIds.has(x.id))];
+                        saveSubjects(merged);
+                        renderSubjectList();
+                        alert(`✅ 被写体プリセット ${data.subjects.length} 件をインポートしました。`);
+                    }
+                    if (data.history && Array.isArray(data.history)) {
+                        const existing = JSON.parse(localStorage.getItem('grok_gen_history') || '[]');
+                        const existingTs = new Set(existing.map(x => x.timestamp));
+                        const merged = [...data.history.filter(x => !existingTs.has(x.timestamp)), ...existing].slice(0, 30);
+                        localStorage.setItem('grok_gen_history', JSON.stringify(merged));
+                        renderHistory();
+                        alert(`✅ 履歴 ${data.history.length} 件をインポートしました。`);
+                    }
+                } catch { alert('❌ ファイルの読み込みに失敗しました。'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function initSubjectPresets() {
+            // DOM再取得
+            els.openSubjectsBtn      = document.getElementById('open-subjects-btn');
+            els.closeSubjectsBtn     = document.getElementById('close-subjects-btn');
+            els.subjectModal         = document.getElementById('subject-modal');
+            els.subjectCountBadge    = document.getElementById('subject-count-badge');
+            els.activeMainLabel      = document.getElementById('active-main-label');
+            els.activeMainName       = document.getElementById('active-main-name');
+            els.clearMainBtn         = document.getElementById('clear-main-btn');
+            els.activeSubLabel       = document.getElementById('active-sub-label');
+            els.activeSubName        = document.getElementById('active-sub-name');
+            els.clearSubBtn          = document.getElementById('clear-sub-btn');
+            els.newSubjectBtn        = document.getElementById('new-subject-btn');
+            els.subjectList          = document.getElementById('subject-list');
+            els.subjectFormPlaceholder = document.getElementById('subject-form-placeholder');
+            els.subjectForm          = document.getElementById('subject-form');
+            els.sfName               = document.getElementById('sf-name');
+            els.sfAge                = document.getElementById('sf-age');
+            els.sfFashion            = document.getElementById('sf-fashion');
+            els.sfVibe               = document.getElementById('sf-vibe');
+            els.sfFaceVibe           = document.getElementById('sf-face-vibe');
+            els.sfEyes               = document.getElementById('sf-eyes');
+            els.sfJawline            = document.getElementById('sf-jawline');
+            els.sfHairColor          = document.getElementById('sf-hair-color');
+            els.sfHairStyle          = document.getElementById('sf-hair-style');
+            els.sfFrame              = document.getElementById('sf-frame');
+            els.sfHeight             = document.getElementById('sf-height');
+            els.sfBust               = document.getElementById('sf-bust');
+            els.sfSkinTone           = document.getElementById('sf-skin-tone');
+            els.sfHips               = document.getElementById('sf-hips');
+            els.sfWaist              = document.getElementById('sf-waist');
+            els.sfExtra              = document.getElementById('sf-extra');
+            els.sfPreview            = document.getElementById('sf-preview');
+            els.sfSaveBtn            = document.getElementById('sf-save-btn');
+            els.sfDeleteBtn          = document.getElementById('sf-delete-btn');
+            els.sfApplyMainBtn       = document.getElementById('sf-apply-main-btn');
+            els.sfApplySubBtn        = document.getElementById('sf-apply-sub-btn');
+            els.exportSubjectsBtn    = document.getElementById('export-subjects-btn');
+            els.importSubjectsInput  = document.getElementById('import-subjects-input');
+
+            updateActiveSubjectUI();
+            renderSubjectList();
+
+            els.openSubjectsBtn.addEventListener('click', () => {
+                els.subjectModal.classList.add('show');
+                hideSubjectForm();
+                renderSubjectList();
+                lucide.createIcons();
+            });
+            els.closeSubjectsBtn.addEventListener('click', () => els.subjectModal.classList.remove('show'));
+            els.subjectModal.addEventListener('click', e => { if (e.target === els.subjectModal) els.subjectModal.classList.remove('show'); });
+            els.newSubjectBtn.addEventListener('click', () => {
+                editingSubjectId = null;
+                fillForm({ name:'', age:'early 20s', hairColor:'jet black', hairStyle:'long wavy, loose',
+                           skinTone:'fair with a cool-neutral undertone', faceVibe:'K-beauty glass-skin base, soft taupe-brown liner, glossy gradient nude-pink lips' });
+                els.sfDeleteBtn.classList.add('hidden');
+                showSubjectForm();
+            });
+            els.sfSaveBtn.addEventListener('click', () => saveSubjectForm());
+            els.sfDeleteBtn.addEventListener('click', deleteSubjectForm);
+            els.sfApplyMainBtn.addEventListener('click', () => applySubject('main'));
+            els.sfApplySubBtn.addEventListener('click', () => applySubject('sub'));
+            els.clearMainBtn.addEventListener('click', () => { localStorage.removeItem(ACTIVE_MAIN_KEY); updateActiveSubjectUI(); renderSubjectList(); });
+            els.clearSubBtn.addEventListener('click',  () => { localStorage.removeItem(ACTIVE_SUB_KEY);  updateActiveSubjectUI(); renderSubjectList(); });
+            els.exportSubjectsBtn.addEventListener('click', exportSubjects);
+            els.importSubjectsInput.addEventListener('change', e => { if (e.target.files[0]) importSubjects(e.target.files[0]); });
+
+            // プレビュー自動更新
+            ['sfAge','sfFashion','sfVibe','sfFaceVibe','sfEyes','sfJawline','sfHairColor','sfHairStyle','sfFrame','sfHeight','sfBust','sfSkinTone','sfHips','sfWaist'].forEach(k => {
+                els[k] && els[k].addEventListener('change', updateSubjectPreview);
+            });
+            els.sfExtra.addEventListener('input', updateSubjectPreview);
+        }
+
+
+        // ===================== ランダム生成 =====================
+        const RANDOM_POOLS = {
+            location: [
+                { en: "outdoor night street, neon-lit alley, Tokyo Shinjuku",          ja: "新宿・夜のネオン街" },
+                { en: "rooftop at sunset, city skyline behind her",                    ja: "屋上・夕暮れのスカイライン" },
+                { en: "dim bedroom interior, rumpled bed sheets",                      ja: "薄暗い寝室・乱れたシーツ" },
+                { en: "convenience store entrance at night, warm fluorescent light",   ja: "深夜のコンビニ前・蛍光灯" },
+                { en: "rainy cafe window seat, condensation on glass",                 ja: "雨の日のカフェ窓際・結露" },
+                { en: "park bench under cherry blossoms, soft spring light",           ja: "桜の公園ベンチ・春の柔らかい光" },
+                { en: "beach at golden hour, wet sand reflections",                    ja: "ゴールデンアワーのビーチ" },
+                { en: "urban sidewalk, grey stone pavement",                           ja: "都会の歩道・石畳" },
+                { en: "crowded train, handrail grip, commute lighting",                ja: "満員電車・吊り革・通勤照明" },
+                { en: "school rooftop, chain-link fence, afternoon sky",               ja: "学校の屋上・フェンス・午後の空" },
+                { en: "onsen ryokan room, tatami floor, shoji screen light",           ja: "温泉旅館・畳・障子の光" },
+                { en: "subway platform, harsh fluorescent overhead light",             ja: "地下鉄ホーム・頭上の蛍光灯" },
+                { en: "izakaya booth, warm amber lantern light",                       ja: "居酒屋の個室・琥珀色の提灯" },
+                { en: "shopping mall escalator, bright retail lighting",               ja: "ショッピングモールのエスカレーター" },
+                { en: "forest trail, dappled sunlight through leaves",                 ja: "森の小道・木漏れ日" },
+                { en: "apartment balcony, evening city lights below",                  ja: "マンションのベランダ・夜景" },
+                { en: "indoor pool, turquoise water reflections",                      ja: "屋内プール・ターコイズの水面" },
+                { en: "backstage dressing room, vanity mirror bulbs",                  ja: "楽屋・バニティミラーの電球" },
+                { en: "snowy street, breath visible in cold air",                      ja: "雪の積もる道・白い吐息" },
+                { en: "festival night, paper lanterns, yukata crowd",                  ja: "夜祭り・提灯・浴衣の人混み" },
+            ],
+            time: [
+                { en: "nighttime, direct flash",                              ja: "夜間・直射フラッシュ" },
+                { en: "golden hour, warm backlight",                          ja: "黄金時間帯・温かい逆光" },
+                { en: "overcast daylight, cool diffuse light",                ja: "曇り空・クールな拡散光" },
+                { en: "early morning, soft blue ambient",                     ja: "早朝・淡いブルーの環境光" },
+                { en: "harsh midday sun, strong shadows",                     ja: "真昼の強い陽光・くっきりした影" },
+                { en: "blue hour, twilight glow",                             ja: "ブルーアワー・トワイライト" },
+                { en: "artificial indoor ambient, warm tungsten",             ja: "屋内・タングステン系の温かい光" },
+                { en: "neon night, colored light bleed",                      ja: "ネオンナイト・カラフルな光漏れ" },
+                { en: "rainy grey day, muted contrast",                       ja: "雨の灰色の日・落ち着いたコントラスト" },
+                { en: "studio-free window light, single soft source",         ja: "窓際の自然光・ワンソース" },
+            ],
+            outfit: [
+                { en: "oversized hoodie, no pants, bare legs",                ja: "オーバーサイズパーカー・パンツなし・素足" },
+                { en: "school uniform, blazer and plaid skirt",               ja: "制服・ブレザー＋チェックスカート" },
+                { en: "tight ribbed crop top and high-waist jeans",           ja: "リブクロップトップ＋ハイウエストジーンズ" },
+                { en: "summer dress, floral print, spaghetti straps",         ja: "花柄サマードレス・細ストラップ" },
+                { en: "black leather jacket, mini skirt, fishnets",           ja: "黒レザージャケット＋ミニスカ＋網タイツ" },
+                { en: "loose knit sweater, slipping off shoulder",            ja: "ルーズニット・肩落ち" },
+                { en: "athletic wear, sports bra and bike shorts",            ja: "スポーツブラ＋バイクショーツ" },
+                { en: "business casual, white blouse and pencil skirt",       ja: "ビジネスカジュアル・白ブラウス＋ペンシルスカート" },
+                { en: "yukata, traditional summer festival outfit",           ja: "浴衣・夏祭りスタイル" },
+                { en: "lingerie, lace bralette and matching briefs",          ja: "レースブラレット＋お揃いショーツ" },
+                { en: "vintage denim jacket, band tee, baggy jeans",         ja: "ヴィンテージデニムジャケット＋バンT＋バギージーンズ" },
+                { en: "off-shoulder top, flowing maxi skirt",                 ja: "オフショルダー＋マキシスカート" },
+                { en: "sleeveless turtleneck, micro skirt, knee-high boots",  ja: "ノースリタートル＋マイクロスカート＋ニーハイブーツ" },
+                { en: "pajama set, soft cotton, bedroom casual",              ja: "パジャマセット・コットン・部屋着" },
+                { en: "trench coat, nothing visible underneath",              ja: "トレンチコート・中が見えない" },
+                { en: "maid costume, black and white, apron",                 ja: "メイド服・白黒・エプロン" },
+                { en: "tracksuit, unzipped, casual athleisure",               ja: "ジャージ・前開き・カジュアル" },
+                { en: "formal gown, backless, elegant evening wear",          ja: "バックレスドレス・エレガントなイブニングウェア" },
+            ],
+            pose: [
+                { en: "selfie angle, one arm extended, slight head tilt",     ja: "自撮りアングル・片腕伸ばし・小首傾げ" },
+                { en: "lying on back on bed, top-down POV",                   ja: "ベッドに仰向け・真上からのPOV" },
+                { en: "sitting on floor, knees pulled to chest",              ja: "床座り・膝を抱える" },
+                { en: "leaning against wall, arms crossed, looking away",     ja: "壁もたれ・腕組み・視線そらし" },
+                { en: "kneeling, looking up at camera",                       ja: "ひざまずき・カメラを見上げる" },
+                { en: "standing, one hand in hair, slight body twist",        ja: "立ち姿・髪に手を添えて・ボディツイスト" },
+                { en: "sitting on windowsill, legs dangling",                 ja: "窓枠に腰かけ・脚をぶらぶら" },
+                { en: "lying on side, head resting on hand",                  ja: "横向きに寝転び・頬杖" },
+                { en: "crouching, eye-level with camera",                     ja: "しゃがみ・カメラと目線が同じ高さ" },
+                { en: "walking toward camera, candid mid-step",               ja: "カメラに向かって歩く・歩行中の自然な一瞬" },
+                { en: "back to camera, glancing over shoulder",               ja: "背中向き・肩越しに振り返る" },
+                { en: "sitting on desk edge, legs crossed",                   ja: "机の端に腰かけ・脚を組む" },
+                { en: "stretching arms overhead, yawning",                    ja: "両腕を上に伸び・あくび" },
+                { en: "leaning forward on table, chin on hands",              ja: "テーブルに前傾み・両手に顎" },
+                { en: "mid-laugh, candid, unposed",                           ja: "笑いの瞬間・自然体・無造作" },
+            ],
+            camera: [
+                { en: "direct flash, CCD aesthetic, high ISO noise",          ja: "直射フラッシュ・CCD風・高ISOノイズ" },
+                { en: "smartphone candid, social media realism, compression artifacts", ja: "スマホ自然撮り・SNSリアル感・圧縮ノイズ" },
+                { en: "film grain, 35mm analog look, slight vignette",        ja: "フィルムグレイン・35mmアナログ・周辺暗落ち" },
+                { en: "high-end digital, shallow DOF, smooth bokeh",          ja: "高画質デジタル・浅い被写界深度・滑らかなボケ" },
+                { en: "top-down steep angle, dutch tilt, low pixel",          ja: "急な俯瞰・ダッチアングル・低解像度感" },
+                { en: "extreme close-up, macro detail, shallow focus",        ja: "超クローズアップ・マクロ・浅いフォーカス" },
+                { en: "wide angle, slight distortion, environmental context", ja: "広角・若干の歪み・環境を映し込む" },
+                { en: "eye-level intimate, close distance, candid feel",      ja: "目線・密着距離・親密な自然体" },
+                { en: "low angle, looking up, dramatic perspective",          ja: "ローアングル・見上げ・ドラマチックなパース" },
+                { en: "security camera style, high angle, grainy",            ja: "防犯カメラ風・高所アングル・粗めの画質" },
+            ],
+            mood: [
+                { en: "mysterious, nocturnal, solitary",                      ja: "ミステリアス・夜の孤独感" },
+                { en: "playful, carefree, mid-laugh",                         ja: "遊び心・無邪気・笑いの瞬間" },
+                { en: "melancholic, introspective, quiet",                    ja: "物憂げ・内省的・静寂" },
+                { en: "confident, bold, direct eye contact",                  ja: "自信あふれる・大胆・カメラを直視" },
+                { en: "soft, tender, intimate distance",                      ja: "柔らかい・優しい・親密な距離感" },
+                { en: "cool, detached, effortless chic",                      ja: "クール・無関心・自然体のおしゃれ" },
+                { en: "tired, sleepy, just-woke-up energy",                   ja: "眠い・だるい・起き抜けの雰囲気" },
+                { en: "rebellious, edgy, don't-care attitude",                ja: "反骨心・尖った・どうせ感" },
+                { en: "romantic, dreamy, soft focus mood",                    ja: "ロマンチック・夢見がち・ふんわり" },
+                { en: "candid, caught-off-guard, natural",                    ja: "自然体・不意打ち・素の表情" },
+            ],
+        };
+
+        let lastRandomSeed = null; // 最後に使ったランダム設定を保持（履歴再生成用）
+
+        function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function newRandomSeed() {
+            const pick = pool => { const item = pickRandom(pool); return { en: item.en, ja: item.ja }; };
+            lastRandomSeed = {
+                location: pick(RANDOM_POOLS.location),
+                time:     pick(RANDOM_POOLS.time),
+                outfit:   pick(RANDOM_POOLS.outfit),
+                pose:     pick(RANDOM_POOLS.pose),
+                camera:   pick(RANDOM_POOLS.camera),
+                mood:     pick(RANDOM_POOLS.mood),
+            };
+        }
+
+        function buildRandomInstruction(baseJson) {
+            const seed = lastRandomSeed;
+            const cameraOverride = document.getElementById('camera-angle-select')?.value || '';
+            const framingOverride = document.getElementById('framing-select')?.value || '';
+            const promptOverride = els.promptInput?.value?.trim() || '';
+
+            // カメラ系はプルダウン・プロンプト指定がある場合はランダムを使わない
+            const hasCameraOverride = cameraOverride || framingOverride || /angle|shot|angle|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
+            const hasPoseOverride   = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptOverride);
+
+            let instruction = `\n\n【ランダム生成シード（優先度: プロンプト > カメラプルダウン > このシード）】\n`;
+            instruction += `・Location/Background: ${seed.location.en}\n`;
+            instruction += `・Lighting/Time: ${seed.time.en}\n`;
+            instruction += `・Outfit: ${seed.outfit.en}\n`;
+            if (!hasPoseOverride)   instruction += `・Pose: ${seed.pose.en}\n`;
+            if (!hasCameraOverride) instruction += `・Camera style: ${seed.camera.en}\n`;
+            instruction += `・Mood/Vibe: ${seed.mood.en}\n`;
+            if (hasCameraOverride)  instruction += `・Camera style: [プルダウン/プロンプト指定を優先 - ランダムシードのカメラ設定は無視してください]\n`;
+            if (hasPoseOverride)    instruction += `・Pose: [プロンプト指定を優先 - ランダムシードのポーズは無視してください]\n`;
+            if (baseJson) {
+                instruction += `\n【ベース構成（履歴から）】\n以下のJSONをベースに、上記シードで指定したフィールドのみ差し替えて再生成してください:\n${JSON.stringify(baseJson, null, 2).slice(0, 800)}...`;
+            }
+            return instruction;
+        }
+
+        function showRandomSeedBadge(seed) {
+            try {
+                const badge = document.getElementById('random-seed-display');
+                if (!badge || !seed) return;
+                badge.innerHTML = `<span class="text-amber-400">🎲</span>
+                    <span class="text-slate-400">${seed.location.ja}</span>
+                    <span class="text-slate-600">·</span>
+                    <span class="text-slate-400">${seed.time.ja}</span>
+                    <span class="text-slate-600">·</span>
+                    <span class="text-slate-400">${seed.outfit.ja}</span>`;
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            } catch(e) { console.warn('showRandomSeedBadge error:', e); }
+        }
+
+        // ランダムボタン押下 → 抽選してプレビュー表示のみ（生成しない）
+        let pendingRandomBaseJson = null;
+
+        function handleRandomGenerate(baseJson) {
+            const keys = getApiKeys();
+            if (!keys || keys.length === 0) { showError('APIキーを登録してください。'); return; }
+            pendingRandomBaseJson = baseJson;
+            rollRandomSeed();
+        }
+
+        function rollRandomSeed() {
+            newRandomSeed();
+            showRandomPreviewPanel(lastRandomSeed);
+        }
+
+        function showRandomPreviewPanel(seed) {
+            const panel = document.getElementById('random-preview-panel');
+            const items = document.getElementById('random-preview-items');
+            if (!panel || !items || !seed) return;
+
+            const cameraOverride  = document.getElementById('camera-angle-select')?.value || '';
+            const framingOverride = document.getElementById('framing-select')?.value || '';
+            const promptText      = els.promptInput?.value?.trim() || '';
+            const hasCameraOvr    = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptText);
+            const hasPoseOvr      = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptText);
+
+            const labels = [
+                { icon: '📍', label: 'ロケーション', value: seed.location.ja, override: false },
+                { icon: '☀️', label: '時間帯・光源', value: seed.time.ja,     override: false },
+                { icon: '👗', label: '服装',         value: seed.outfit.ja,   override: false },
+                { icon: '🧍', label: 'ポーズ',       value: hasPoseOvr    ? '⚠️ プロンプト指定を優先' : seed.pose.ja,   override: hasPoseOvr },
+                { icon: '📷', label: 'カメラ',       value: hasCameraOvr  ? '⚠️ プルダウン/プロンプト指定を優先' : seed.camera.ja, override: hasCameraOvr },
+                { icon: '🎭', label: 'ムード',       value: seed.mood.ja,     override: false },
+            ];
+            items.innerHTML = labels.map(l => `
+                <div class="flex gap-2 items-start">
+                    <span class="flex-shrink-0 w-24 text-slate-500 text-[11px]">${l.icon} ${l.label}</span>
+                    <span class="${l.override ? 'text-amber-400/70 italic text-[11px]' : 'text-slate-200 text-[11px]'}">${l.value}</span>
+                </div>`).join('');
+
+            panel.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // 「これで生成」ボタン → 実際にAPI呼び出し
+        async function executeRandom() {
+            const panel = document.getElementById('random-preview-panel');
+            if (panel) panel.classList.add('hidden');
+
+            const keys = getApiKeys();
+            if (!keys || keys.length === 0) { showError('APIキーを登録してください。'); return; }
+
+            const randomInstruction = buildRandomInstruction(pendingRandomBaseJson); // lastRandomSeed を使用（再利用）
+            showRandomSeedBadge(lastRandomSeed);
+
+            const userPrompt = pendingRandomBaseJson
+                ? '（ランダムバリエーション生成）上記ベースJSONを参照してください'
+                : els.promptInput.value.trim() || 'Japanese woman, photorealistic, detailed';
+
+            setLoadingState(true);
+            els.statusArea.classList.add('hidden');
+            els.errorMessage.classList.add('hidden');
+            try {
+                const systemInstruction = PRESETS[currentPreset].instruction
+                    + getAspectInstruction()
+                    + getCameraInstruction()
+                    + getActiveSubjectInstruction()
+                    + randomInstruction;
+                const responseData = await fetchWithKeyRotation(userPrompt, systemInstruction);
+                const responseText = responseData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!responseText) throw new Error('AIから応答がありませんでした');
+                parseAndDisplayResult(responseText, '（ランダム生成）');
+            } catch(error) {
+                showError(error.message);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+
         // ===================== キーローテーション付きAPIリクエスト =====================
-async function fetchWithKeyRotation(textInput) {
+async function fetchWithKeyRotation(textInput, overrideInstruction = null) {
     const keys = getApiKeys();
     if (keys.length === 0) throw new Error('APIキーが登録されていません。キー管理から追加してください。');
 
     const modelName = els.modelSelect.value;
-    const systemInstruction = PRESETS[currentPreset].instruction + getAspectInstruction();
+    const systemInstruction = overrideInstruction || (PRESETS[currentPreset].instruction + getAspectInstruction() + getActiveSubjectInstruction());
     const responseSchema = buildResponseSchema();
 
     const startIdx = getActiveKeyIndex();
@@ -878,7 +1959,7 @@ function buildResponseSchema() {
                         },
                         required: ['description','mirror_rules','age','expression','face','hair','body','pose','clothing']
                     },
-                    accessories: { type:'OBJECT', properties:{headwear:{type:'STRING'},jewelry:{type:'STRING'},device:{type:'STRING'},prop:{type:'STRING'}}, required:['headwear','jewelry','device','prop'] },
+                    accessories: { type:'OBJECT', properties:{headwear:{type:'STRING'},jewelry:{type:'STRING'},device:{type:'STRING'},prop:{type:'STRING'}}, required:['jewelry'] },
                     photography: {
                         type: 'OBJECT',
                         properties: { camera_style:{type:'STRING'}, angle:{type:'STRING'}, shot_type:{type:'STRING'}, aspect_ratio:{type:'STRING'}, texture:{type:'STRING'}, lighting:{type:'STRING'}, depth_of_field:{type:'STRING'} },
@@ -952,6 +2033,7 @@ function parseAndDisplayResult(responseText, promptText) {
         outputData.ja   = parsed.japanese_prompt;
 
         els.emptyState.classList.add('opacity-0','pointer-events-none');
+        setTimeout(() => els.emptyState.classList.add('hidden'), 400);
         els.englishOutput.textContent  = outputData.en;
         els.japaneseOutput.textContent = outputData.ja;
         els.plainTextContainer.classList.remove('hidden');
@@ -964,7 +2046,7 @@ function parseAndDisplayResult(responseText, promptText) {
         }, 50);
 
         // 履歴に保存
-        addHistory({ prompt: promptText, preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, timestamp: Date.now() });
+        addHistory({ prompt: promptText || '（ランダム生成）', preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, explanationJa: parsed.explanation_ja || '', randomSeed: lastRandomSeed, timestamp: Date.now() });
 
     } catch (error) {
         console.error('Parse Error:', error, responseText);
@@ -991,7 +2073,14 @@ function clearHistory() {
     renderHistory();
 }
 
-function renderHistory() {
+function randomFromHistory(index) {
+            const history = getHistory();
+            const entry = history[index];
+            if (!entry || !entry.outputData?.json) return;
+            handleRandomGenerate(entry.outputData.json);
+        }
+
+        function renderHistory() {
     const history = getHistory();
     els.historyList.innerHTML = '';
     if (history.length === 0) {
@@ -1017,7 +2106,10 @@ function renderHistory() {
                     <span class="text-xs text-slate-500">${entry.model || 'unknown'}</span>
                 </div>
             </div>
-            <button onclick="deleteHistory(${i})" class="text-slate-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>`;
+            <div class="flex gap-1 flex-shrink-0 mt-0.5">
+                <button onclick="event.stopPropagation();randomFromHistory(${i})" class="text-slate-600 hover:text-amber-400 transition-colors" title="ランダムバリエーション生成"><i data-lucide="shuffle" class="w-3 h-3"></i></button>
+                <button onclick="event.stopPropagation();deleteHistory(${i})" class="text-slate-600 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>`;
         els.historyList.appendChild(div);
     });
     lucide.createIcons();
@@ -1037,7 +2129,7 @@ function loadHistory(idx) {
     els.jsonOutput.innerHTML = syntaxHighlight(JSON.stringify(outputData.json, null, 2));
     els.explanationContainer.classList.remove('hidden','opacity-0');
     // 解説は保存していないので省略表示
-    els.explanationText.textContent = '（履歴から復元）';
+    els.explanationText.textContent = entry.explanationJa || '（履歴から復元）';
 }
 
 function deleteHistory(idx) {
@@ -1053,6 +2145,7 @@ function setLoadingState(isLoading) {
     els.promptInput.disabled = isLoading;
     if (isLoading) {
         els.generateBtn.disabled = true;
+        if (els.randomBtn) els.randomBtn.disabled = true;
         els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
         lucide.createIcons();
     } else {
