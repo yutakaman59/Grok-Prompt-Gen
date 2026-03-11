@@ -1991,55 +1991,55 @@ function getCameraInstruction() {
 
         function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-        // カテゴリのデフォルトON/OFF設定
-        const RANDOM_CATEGORY_DEFAULTS = {
-            location: true, time: true, outfit: true, pose: true, camera: true, mood: true,
+        // カテゴリのロック状態: true=固定(再抽選でシャッフルしない) / false=シャッフル対象
+        let randomCategoryLocked = {
+            location: false, time: false, outfit: false, pose: false, camera: false, mood: false,
             hair: false, body: false, expression: false, accessory: false, legwear: false,
         };
-        // アクティブなカテゴリ状態（UIトグルで変更）
-        let randomCategoryEnabled = Object.assign({}, RANDOM_CATEGORY_DEFAULTS);
 
         function newRandomSeed() {
             const pick = pool => { const item = pickRandom(pool); return { en: item.en, ja: item.ja }; };
+            // ロックされていないカテゴリのみシャッフル。初回(lastRandomSeedがnull)は全カテゴリ初期化
+            const prev = lastRandomSeed;
             lastRandomSeed = {
-                location:   pick(RANDOM_POOLS.location),
-                time:       pick(RANDOM_POOLS.time),
-                outfit:     pick(RANDOM_POOLS.outfit),
-                pose:       pick(RANDOM_POOLS.pose),
-                camera:     pick(RANDOM_POOLS.camera),
-                mood:       pick(RANDOM_POOLS.mood),
-                hair:       pick(RANDOM_POOLS.hair),
-                body:       pick(RANDOM_POOLS.body),
-                expression: pick(RANDOM_POOLS.expression),
-                accessory:  pick(RANDOM_POOLS.accessory),
-                legwear:    pick(RANDOM_POOLS.legwear),
+                location:   (!prev || !randomCategoryLocked.location)   ? pick(RANDOM_POOLS.location)   : prev.location,
+                time:       (!prev || !randomCategoryLocked.time)        ? pick(RANDOM_POOLS.time)        : prev.time,
+                outfit:     (!prev || !randomCategoryLocked.outfit)      ? pick(RANDOM_POOLS.outfit)      : prev.outfit,
+                pose:       (!prev || !randomCategoryLocked.pose)        ? pick(RANDOM_POOLS.pose)        : prev.pose,
+                camera:     (!prev || !randomCategoryLocked.camera)      ? pick(RANDOM_POOLS.camera)      : prev.camera,
+                mood:       (!prev || !randomCategoryLocked.mood)        ? pick(RANDOM_POOLS.mood)        : prev.mood,
+                hair:       (!prev || !randomCategoryLocked.hair)        ? pick(RANDOM_POOLS.hair)        : prev.hair,
+                body:       (!prev || !randomCategoryLocked.body)        ? pick(RANDOM_POOLS.body)        : prev.body,
+                expression: (!prev || !randomCategoryLocked.expression)  ? pick(RANDOM_POOLS.expression)  : prev.expression,
+                accessory:  (!prev || !randomCategoryLocked.accessory)   ? pick(RANDOM_POOLS.accessory)   : prev.accessory,
+                legwear:    (!prev || !randomCategoryLocked.legwear)     ? pick(RANDOM_POOLS.legwear)     : prev.legwear,
             };
         }
 
         function buildRandomInstruction(baseJson) {
             const seed = lastRandomSeed;
-            const cameraOverride = document.getElementById('camera-angle-select')?.value || '';
+            const cameraOverride  = document.getElementById('camera-angle-select')?.value || '';
             const framingOverride = document.getElementById('framing-select')?.value || '';
-            const promptOverride = els.promptInput?.value?.trim() || '';
+            const promptOverride  = els.promptInput?.value?.trim() || '';
             const hasCameraOverride = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
             const hasPoseOverride   = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptOverride);
 
-            let instruction = `\n\n【ランダム生成シード（優先度: プロンプト > カメラプルダウン > このシード）】\n`;
-            if (randomCategoryEnabled.location)   instruction += `・Location/Background: ${seed.location.en}\n`;
-            if (randomCategoryEnabled.time)        instruction += `・Lighting/Time: ${seed.time.en}\n`;
-            if (randomCategoryEnabled.outfit)      instruction += `・Outfit: ${seed.outfit.en}\n`;
-            if (randomCategoryEnabled.pose && !hasPoseOverride)     instruction += `・Pose: ${seed.pose.en}\n`;
-            if (randomCategoryEnabled.camera && !hasCameraOverride) instruction += `・Camera style: ${seed.camera.en}\n`;
-            if (randomCategoryEnabled.mood)        instruction += `・Mood/Vibe: ${seed.mood.en}\n`;
-            if (randomCategoryEnabled.hair)        instruction += `・Hair: ${seed.hair.en}\n`;
-            if (randomCategoryEnabled.body)        instruction += `・Body type: ${seed.body.en}\n`;
-            if (randomCategoryEnabled.expression)  instruction += `・Facial expression: ${seed.expression.en}\n`;
-            if (randomCategoryEnabled.accessory)   instruction += `・Accessory: ${seed.accessory.en}\n`;
-            if (randomCategoryEnabled.legwear)     instruction += `・Legwear/Footwear: ${seed.legwear.en}\n`;
-            if (hasCameraOverride) instruction += `・Camera style: [プルダウン/プロンプト指定を優先]\n`;
-            if (hasPoseOverride)   instruction += `・Pose: [プロンプト指定を優先]\n`;
+            let instruction = '\n\n【ランダム生成シード（優先度: プロンプト > カメラプルダウン > このシード）】\n';
+            instruction += '・Location/Background: ' + seed.location.en + '\n';
+            instruction += '・Lighting/Time: '       + seed.time.en     + '\n';
+            instruction += '・Outfit: '              + seed.outfit.en   + '\n';
+            if (!hasPoseOverride)     instruction += '・Pose: '         + seed.pose.en   + '\n';
+            if (!hasCameraOverride)   instruction += '・Camera style: ' + seed.camera.en + '\n';
+            instruction += '・Mood/Vibe: '           + seed.mood.en     + '\n';
+            instruction += '・Hair: '                + seed.hair.en     + '\n';
+            instruction += '・Body type: '           + seed.body.en     + '\n';
+            instruction += '・Facial expression: '   + seed.expression.en + '\n';
+            instruction += '・Accessory: '           + seed.accessory.en  + '\n';
+            instruction += '・Legwear/Footwear: '    + seed.legwear.en    + '\n';
+            if (hasCameraOverride) instruction += '・Camera style: [プルダウン/プロンプト指定を優先]\n';
+            if (hasPoseOverride)   instruction += '・Pose: [プロンプト指定を優先]\n';
             if (baseJson) {
-                instruction += `\n【ベース構成（履歴から）】\n以下のJSONをベースに、上記シードで指定したフィールドのみ差し替えて再生成してください:\n${JSON.stringify(baseJson, null, 2).slice(0, 800)}...`;
+                instruction += '\n【ベース構成（履歴から）】\n以下のJSONをベースに、上記シードで指定したフィールドのみ差し替えて再生成してください:\n' + JSON.stringify(baseJson, null, 2).slice(0, 800) + '...';
             }
             return instruction;
         }
@@ -2048,12 +2048,13 @@ function getCameraInstruction() {
             try {
                 const badge = document.getElementById('random-seed-display');
                 if (!badge || !seed) return;
-                badge.innerHTML = `<span class="text-amber-400">🎲</span>
-                    <span class="text-slate-400">${seed.location.ja}</span>
-                    <span class="text-slate-600">·</span>
-                    <span class="text-slate-400">${seed.time.ja}</span>
-                    <span class="text-slate-600">·</span>
-                    <span class="text-slate-400">${seed.outfit.ja}</span>`;
+                const locked = Object.keys(randomCategoryLocked).filter(function(k){ return randomCategoryLocked[k]; });
+                const lockTxt = locked.length > 0 ? ' 🔒' + locked.length + '固定' : '';
+                badge.innerHTML = '<span class="text-amber-400">🎲</span>'
+                    + '<span class="text-slate-400">' + seed.location.ja + '</span>'
+                    + '<span class="text-slate-600">·</span>'
+                    + '<span class="text-slate-400">' + seed.outfit.ja + '</span>'
+                    + (lockTxt ? '<span class="text-sky-400 text-[10px]">' + lockTxt + '</span>' : '');
                 badge.classList.remove('hidden');
                 badge.classList.add('flex');
             } catch(e) { console.warn('showRandomSeedBadge error:', e); }
@@ -2098,29 +2099,31 @@ function getCameraInstruction() {
                 { key: 'accessory',  icon: '💍', label: 'アクセサリー' },
                 { key: 'legwear',    icon: '🦵', label: '脚・靴下'     },
             ];
-            const allOn = ALL_CATS.every(function(c){ return randomCategoryEnabled[c.key]; });
+            const allLocked = ALL_CATS.every(function(c){ return randomCategoryLocked[c.key]; });
 
             let gridHTML = '';
             ALL_CATS.forEach(function(c) {
-                const enabled    = randomCategoryEnabled[c.key];
+                const locked     = randomCategoryLocked[c.key];
                 const isOverride = (c.key === 'camera' && hasCameraOvr) || (c.key === 'pose' && hasPoseOvr);
                 const val        = (seed[c.key] && seed[c.key].ja) ? seed[c.key].ja : '';
-                const chk        = enabled ? '✓' : '';
-                const btnCls     = enabled ? 'bg-amber-500 border-amber-500 text-white' : 'bg-transparent border-slate-600 text-transparent';
-                const valCls     = enabled ? (isOverride ? 'text-amber-400 italic' : 'text-slate-200') : 'text-slate-600 line-through';
                 const dispVal    = isOverride ? '⚠️ 指定優先' : val;
+                // ロック中=青系固定表示 / 非ロック=シャッフル対象(グレー薄め)
+                const valCls     = locked ? 'text-sky-300 font-medium' : (isOverride ? 'text-amber-400 italic' : 'text-slate-400');
+                const btnCls     = locked ? 'bg-sky-600 border-sky-500 text-white' : 'bg-slate-700 border-slate-500 text-slate-400';
+                const btnTip     = locked ? '🔒' : '🔀';
                 gridHTML += '<div class="flex items-start gap-1.5">'
-                          + '<button onclick="toggleCategory(\'' + c.key + '\')" class="flex-shrink-0 mt-0.5 w-4 h-4 rounded border text-[9px] font-bold flex items-center justify-center transition-colors ' + btnCls + '">' + chk + '</button>'
-                          + '<div class="min-w-0"><span class="text-[10px] text-slate-500">' + c.icon + ' ' + c.label + '</span>'
-                          + '<div class="' + valCls + ' text-[11px] truncate leading-tight">' + dispVal + '</div></div>'
-                          + '</div>';
+                          + '<button onclick="toggleCategoryLock(\'' + c.key + '\')" title="' + (locked ? '固定中・クリックで解除' : 'クリックで固定') + '" class="flex-shrink-0 mt-0.5 w-5 h-5 rounded border text-[9px] flex items-center justify-center transition-all ' + btnCls + '">' + btnTip + '</button>'
+                          + '<div class="min-w-0 flex-1">'
+                          + '<span class="text-[10px] text-slate-500">' + c.icon + ' ' + c.label + '</span>'
+                          + '<div class="' + valCls + ' text-[11px] truncate leading-tight">' + dispVal + '</div>'
+                          + '</div></div>';
             });
 
-            const allBtnCls = allOn ? 'border-amber-500/50 text-amber-400' : 'border-slate-600 text-slate-400';
-            const allBtnTxt = allOn ? '✦ 全OFF' : '✦ 全ON';
+            const allBtnCls = allLocked ? 'border-sky-500/60 text-sky-400' : 'border-slate-600 text-slate-400';
+            const allBtnTxt = allLocked ? '🔀 全解除' : '🔒 全固定';
             items.innerHTML = '<div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-700/50">'
-                + '<span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">カテゴリ選択</span>'
-                + '<button onclick="toggleAllCategories(' + String(allOn) + ')" class="text-[10px] px-2 py-0.5 rounded border ' + allBtnCls + ' hover:text-white transition-colors">' + allBtnTxt + '</button>'
+                + '<span class="text-[10px] text-slate-400 font-semibold">🔒固定 = 再抽選でも変わらない</span>'
+                + '<button onclick="toggleAllCategoryLock(' + String(allLocked) + ')" class="text-[10px] px-2 py-0.5 rounded border ' + allBtnCls + ' hover:text-white transition-colors">' + allBtnTxt + '</button>'
                 + '</div>'
                 + '<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">' + gridHTML + '</div>';
 
@@ -2128,13 +2131,14 @@ function getCameraInstruction() {
             lucide.createIcons();
         }
 
-        function toggleCategory(key) {
-            randomCategoryEnabled[key] = !randomCategoryEnabled[key];
+
+        function toggleCategoryLock(key) {
+            randomCategoryLocked[key] = !randomCategoryLocked[key];
             showRandomPreviewPanel(lastRandomSeed);
         }
-        function toggleAllCategories(currentlyAllOn) {
-            const newVal = !currentlyAllOn;
-            Object.keys(randomCategoryEnabled).forEach(k => randomCategoryEnabled[k] = newVal);
+        function toggleAllCategoryLock(currentlyAllLocked) {
+            const newVal = !currentlyAllLocked;
+            Object.keys(randomCategoryLocked).forEach(function(k){ randomCategoryLocked[k] = newVal; });
             showRandomPreviewPanel(lastRandomSeed);
         }
 
