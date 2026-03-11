@@ -992,7 +992,86 @@ grok_imagine_prompt は Grok Imagine に直接貼り付けて使う専用プロ�
 };
 
 // ===================== DOM要素 =====================
-const els = {};
+const els = {
+    modelSelect:      document.getElementById('model-select'),
+    aspectSelect:     document.getElementById('aspect-select'),
+    openKeysBtn:      document.getElementById('open-keys-btn'),
+    closeKeysBtn:     document.getElementById('close-keys-btn'),
+    keysModal:        document.getElementById('keys-modal'),
+    keyNameInput:     document.getElementById('key-name-input'),
+    keyValueInput:    document.getElementById('key-value-input'),
+    addKeyBtn:        document.getElementById('add-key-btn'),
+    keysList:         document.getElementById('keys-list'),
+    keyCountBadge:    document.getElementById('key-count-badge'),
+    activeKeyLabel:   document.getElementById('active-key-label'),
+    activeKeyName:    document.getElementById('active-key-name'),
+
+    promptInput:      document.getElementById('prompt-input'),
+    generateBtn:      document.getElementById('generate-btn'),
+    apiWarningText:   document.getElementById('api-warning-text'),
+    presetButtons:    document.querySelectorAll('.preset-btn'),
+
+    statusArea:       document.getElementById('status-area'),
+    retryMessage:     document.getElementById('retry-message'),
+    retryText:        document.getElementById('retry-text'),
+    errorMessage:     document.getElementById('error-message'),
+    errorText:        document.getElementById('error-text'),
+
+    emptyState:           document.getElementById('empty-state'),
+    explanationContainer: document.getElementById('explanation-container'),
+    explanationText:      document.getElementById('explanation-text'),
+    plainTextContainer:   document.getElementById('plain-text-container'),
+    englishOutput:        document.getElementById('english-output'),
+    japaneseOutput:       document.getElementById('japanese-output'),
+    jsonOutput:           document.getElementById('json-output'),
+
+    copyJsonBtn:  document.getElementById('copy-json-btn'),
+    copyJsonIcon: document.getElementById('copy-json-icon'),
+    copyJsonText: document.getElementById('copy-json-text'),
+    copyEnBtn:    document.getElementById('copy-en-btn'),
+    copyEnIcon:   document.getElementById('copy-en-icon'),
+    copyEnText:   document.getElementById('copy-en-text'),
+    copyJaBtn:    document.getElementById('copy-ja-btn'),
+    copyJaIcon:   document.getElementById('copy-ja-icon'),
+    copyJaText:   document.getElementById('copy-ja-text'),
+
+    rateLimitBar:   document.getElementById('rate-limit-bar'),
+    openSubjectsBtn:    document.getElementById('open-subjects-btn'),
+    closeSubjectsBtn:   document.getElementById('close-subjects-btn'),
+    subjectModal:       document.getElementById('subject-modal'),
+    subjectCountBadge:  document.getElementById('subject-count-badge'),
+    activeMainLabel:    document.getElementById('active-main-label'),
+    activeMainName:     document.getElementById('active-main-name'),
+    activeSubLabel:     document.getElementById('active-sub-label'),
+    activeSubName:      document.getElementById('active-sub-name'),
+    clearMainBtn:       document.getElementById('clear-main-btn'),
+    clearSubBtn:        document.getElementById('clear-sub-btn'),
+    newSubjectBtn:      document.getElementById('new-subject-btn'),
+    subjectList:        document.getElementById('subject-list'),
+    subjectListEmpty:   document.getElementById('subject-list-empty'),
+    subjectFormArea:    document.getElementById('subject-form-area'),
+    subjectFormPlaceholder: document.getElementById('subject-form-placeholder'),
+    subjectForm:        document.getElementById('subject-form'),
+    sfName:             document.getElementById('sf-name'),
+    sfAge:              document.getElementById('sf-age'),
+    sfFrame:            document.getElementById('sf-frame'),
+    sfHairColor:        document.getElementById('sf-hair-color'),
+    sfHairStyle:        document.getElementById('sf-hair-style'),
+    sfSkinTone:         document.getElementById('sf-skin-tone'),
+    sfFaceVibe:         document.getElementById('sf-face-vibe'),
+    sfExtra:            document.getElementById('sf-extra'),
+    sfPreview:          document.getElementById('sf-preview'),
+    sfSaveBtn:          document.getElementById('sf-save-btn'),
+    sfDeleteBtn:        document.getElementById('sf-delete-btn'),
+    sfApplyMainBtn:     document.getElementById('sf-apply-main-btn'),
+    sfApplySubBtn:      document.getElementById('sf-apply-sub-btn'),
+    rateLimitText:  document.getElementById('rate-limit-text'),
+    rateLimitReset: document.getElementById('rate-limit-reset'),
+
+    historyList:     document.getElementById('history-list'),
+    historyEmpty:    document.getElementById('history-empty'),
+    clearHistoryBtn: document.getElementById('clear-history-btn'),
+};
 
 // ===================== 状態 =====================
 let outputData = { json: null, en: null, ja: null, imagine: null };
@@ -1046,10 +1125,6 @@ function init() {
     els.clearHistoryBtn   = document.getElementById('clear-history-btn');
     els.presetButtons     = document.querySelectorAll('.preset-btn');
     els.randomBtn         = document.getElementById('random-btn');
-    els.apiWarningText    = document.getElementById('api-warning-text');
-    els.historyEmpty      = document.getElementById('history-empty');
-    els.subjectFormArea   = document.getElementById('subject-form-area');
-    els.subjectListEmpty  = document.getElementById('subject-list-empty');
 
     // モデル復元
     const savedModel = localStorage.getItem(MODEL_KEY);
@@ -1223,11 +1298,11 @@ function updateKeyUI() {
         const idx = getActiveKeyIndex();
         els.activeKeyLabel.classList.remove('hidden');
         els.activeKeyName.textContent = keys[idx]?.name || 'Key' + (idx + 1);
-        if (els.apiWarningText) els.apiWarningText.classList.add('hidden');
+        els.apiWarningText.classList.add('hidden');
         if (!isGenerating) { els.generateBtn.disabled = false; if (els.randomBtn) els.randomBtn.disabled = false; }
     } else {
         els.activeKeyLabel.classList.add('hidden');
-        if (els.apiWarningText) els.apiWarningText.classList.remove('hidden');
+        els.apiWarningText.classList.remove('hidden');
         els.generateBtn.disabled = true;
     }
 }
@@ -1332,7 +1407,7 @@ function getCameraInstruction() {
     const baseWarning = `\n\n🔴🔴🔴【致命的ルール：全アスペクト比での『アニメ化・イラスト化』絶対阻止】🔴🔴🔴\n`
         + `画像生成AIが勝手にイラスト化する悪癖を徹底的に破壊・阻止してください。photorealism 選択時は以下を【必須アクション】とします。\n`
         + `1. grok_imagine_prompt と english_prompt の先頭は、必ず以下の呪文とすること（一言一句違わず）:\n`
-        + `"Ultra-realistic photography, actual human portrait, authentic photo, NOT an illustration, strictly NO anime/3D/CGI,"\n`
+        + `"Photography: Ultra-realistic photography, actual human portrait, authentic photo, NOT an illustration, strictly NO anime/3D/CGI,"\n`
         + `2. Avoid (ネガティブ) リストには以下をすべて突っ込むこと:\n`
         + `"illustration, anime, cartoon, CGI, 3d render, digital art, painting, drawing, artwork, manga, animated, cel-shaded, vtuber, 2.5D, graphic design, fanart"\n`;
 
