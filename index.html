@@ -390,12 +390,50 @@
 
           <!-- セクション: 髪 -->
           <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-1 mt-1">ヘアスタイル</p>
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">シルエット・長さ</label>
+              <select id="sf-hair-silhouette" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="very short pixie cut, close-cropped">超ショート・ピクシー</option>
+                <option value="short bob, chin-length, sleek">ショートボブ（顎ライン）</option>
+                <option value="short bob with volume, slightly messy">ショートボブ・ふんわり</option>
+                <option value="medium length, shoulder-length lob">ミディアム・鎖骨丈</option>
+                <option value="medium layered, voluminous shoulder-length">ミディアム・レイヤーボリューム</option>
+                <option value="wolf cut, layered, shaggy">ウルフカット・レイヤー</option>
+                <option value="long straight, sleek, all one length">ロングストレート</option>
+                <option value="long wavy, loose and voluminous" selected>ロングウェーブ・ゆるふわ</option>
+                <option value="long layered, flowing with volume">ロング・たっぷりボリューム</option>
+                <option value="very long hair, past waist, silky">超ロング・腰まで</option>
+                <option value="high ponytail, sleek and tight">高めポニーテール</option>
+                <option value="twin tails, high pigtails">ツインテール</option>
+                <option value="sleek low bun, tidy">ローバン・まとめ髪</option>
+                <option value="messy updo, loose strands falling">ルーズアップ・後れ毛あり</option>
+                <option value="half-up half-down, top portion tied">ハーフアップ</option>
+                <option value="center-parted twin braids">ツインブレイド</option>
+                <option value="hime cut, straight with blunt side panels">姫カット</option>
+                <option value="natural loose curls, perm texture">パーマ・ゆるカール</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">前髪</label>
+              <select id="sf-hair-bangs" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
+                <option value="">指定なし</option>
+                <option value="no bangs, forehead fully exposed, center part">前髪なし・センター分け</option>
+                <option value="no bangs, forehead fully exposed, side part">前髪なし・サイド分け</option>
+                <option value="blunt straight bangs, eyebrow-length" selected>ぱっつん前髪</option>
+                <option value="wispy see-through bangs, airy fringe">シースルーバング</option>
+                <option value="curtain bangs, parted in the middle">カーテンバング</option>
+                <option value="side-swept bangs, swept to one side">流し前髪・サイドバング</option>
+                <option value="long side bangs, partially covering one eye">長め前髪・目にかかる</option>
+                <option value="micro bangs, very short, far above eyebrows">マイクロバング</option>
+                <option value="messy fringe, textured random strands">無造作前髪</option>
+              </select>
+            </div>
             <div>
               <label class="block text-xs text-slate-400 mb-1">髪色</label>
               <select id="sf-hair-color" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
-                <option value="jet black" selected>黒</option>
-                <option value="dark brown to black">ダークブラウン〜黒</option>
+                <option value="jet black" selected>漆黒</option>
+                <option value="dark brown to black, near-black">ダークブラウン〜黒</option>
                 <option value="dark brown">ダークブラウン</option>
                 <option value="medium brown, caramel highlights">キャラメルブラウン</option>
                 <option value="ash brown, cool-toned">アッシュブラウン</option>
@@ -404,27 +442,11 @@
                 <option value="bleached blonde, platinum">ブリーチ・プラチナ</option>
                 <option value="silver ash, pearl tone">シルバーアッシュ</option>
                 <option value="rose gold, pink tint">ピンク系・ローズゴールド</option>
-                <option value="pastel lavender, dyed">パステルカラー・ラベンダー</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">髪型</label>
-              <select id="sf-hair-style" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
-                <option value="long straight, middle part">ロングストレート・センター分け</option>
-                <option value="long wavy, loose" selected>ロングウェーブ・ゆるふわ</option>
-                <option value="straight hair with wispy bangs, see-through fringe">ストレート・シースルー前髪</option>
-                <option value="straight hair with blunt bangs">ストレート・ぱっつん前髪</option>
-                <option value="short bob with blunt bangs">ショートボブ・ぱっつん</option>
-                <option value="shoulder-length lob, natural wave">ミディアム・ナチュラルウェーブ</option>
-                <option value="wolf cut, layered, curtain bangs">ウルフカット・カーテンバング</option>
-                <option value="hime cut, straight with side panels">姫カット</option>
-                <option value="sleek low bun, center part, face-framing strands">ローバン・センター分け</option>
-                <option value="high ponytail, sleek">高めポニーテール</option>
-                <option value="center-parted twin braids">ツインブレイド</option>
-                <option value="twin tails, high pigtails">ツインテール</option>
-                <option value="short pixie cut, textured">ショートカット・ピクシー</option>
-                <option value="side-swept, voluminous curls">サイドスウェプト・巻き髪</option>
-                <option value="natural perm, loose curls">パーマ・ゆるカール</option>
+                <option value="pastel lavender, dyed">パステルラベンダー</option>
+                <option value="vivid red, dyed">ビビッドレッド</option>
+                <option value="blue-black, subtle blue sheen">ブルーブラック</option>
+                <option value="inner color highlights, dark base with colored inner layers">インナーカラー</option>
+                <option value="two-tone, dark roots fading to lighter ends">ツートーン・グラデーション</option>
               </select>
             </div>
           </div>
@@ -435,12 +457,16 @@
             <div>
               <label class="block text-xs text-slate-400 mb-1">体型</label>
               <select id="sf-frame" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-grok-500 text-slate-200">
-                <option value="slim, petite, delicate frame">華奢・小柄</option>
+                <option value="very slim, delicate petite frame, thin limbs">華奢・超細身</option>
                 <option value="slim" selected>スリム</option>
                 <option value="slim to average with soft curves">スリム〜普通・ソフトカーブ</option>
                 <option value="average, toned and athletic">普通・引き締まり</option>
                 <option value="tall, lean model figure">モデル体型・高身長</option>
                 <option value="curvy, hourglass figure, full bust and hips">グラマラス・グラビア系</option>
+                <option value="soft chubby body, slight belly, round face, cute plump figure">ぽっちゃり・柔らか体型</option>
+                <option value="chubby build, visible belly softness, full arms and thighs, round body shape">ぽっちゃり強め</option>
+                <option value="fat body, large belly, thick arms and thighs, heavy-set figure, BBW body type">太め・デブ寄り</option>
+                <option value="very large, obese body type, very thick limbs, large hanging belly, extremely heavy figure">大柄・かなり太め</option>
               </select>
             </div>
             <div>
@@ -485,6 +511,8 @@
                 <option value="average hips, toned legs">普通ヒップ・引き締まった脚</option>
                 <option value="wide hips, full thighs, curvy lower body">広めヒップ・むっちり太もも</option>
                 <option value="perky round hips, long slim legs">丸みのあるヒップ・長い脚</option>
+                <option value="very wide hips, thick thighs touching, heavy lower body">太ももがっしり・脚が太い</option>
+                <option value="large heavy hips and thighs, cellulite visible, very thick legs">かなり太め・下半身ぽっちゃり</option>
               </select>
             </div>
             <div>
@@ -495,6 +523,8 @@
                 <option value="narrow waist, defined curves">細めウエスト</option>
                 <option value="average waist, natural shape" selected>普通ウエスト</option>
                 <option value="soft waist, gentle taper">ソフトウエスト</option>
+                <option value="wide waist, no defined waistline, full midsection">太めウエスト・くびれなし</option>
+                <option value="large waist, soft belly visible, rounded midsection">丸みのあるお腹</option>
               </select>
             </div>
           </div>
@@ -550,7 +580,7 @@
 
             <!-- ステータスエリア -->
             <!-- ランダムプレビューパネル -->
-            <div id="random-preview-panel" class="hidden mt-3 bg-slate-800/80 border border-amber-500/40 rounded-xl p-3 sm:p-4">
+            <div id="random-preview-panel" class="hidden mt-3 bg-slate-800/80 border border-amber-500/40 rounded-xl p-3 sm:p-4 max-h-96 overflow-y-auto">
                 <div class="flex items-center justify-between mb-2">
                     <p class="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
                         <i data-lucide="shuffle" class="w-3.5 h-3.5"></i> ランダム抽選結果
@@ -559,7 +589,7 @@
                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                     </button>
                 </div>
-                <div id="random-preview-items" class="flex flex-col gap-1 mb-3 text-xs text-slate-300"></div>
+                <div id="random-preview-items" class="mb-3 text-xs text-slate-300"></div>
                 <div class="flex gap-2">
                     <button id="random-reroll-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-300 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
                         <i data-lucide="refresh-cw" class="w-3 h-3"></i> 再抽選
@@ -1073,7 +1103,8 @@ const els = {
     sfAge:              document.getElementById('sf-age'),
     sfFrame:            document.getElementById('sf-frame'),
     sfHairColor:        document.getElementById('sf-hair-color'),
-    sfHairStyle:        document.getElementById('sf-hair-style'),
+    sfHairSilhouette:   document.getElementById('sf-hair-silhouette'),
+    sfHairBangs:        document.getElementById('sf-hair-bangs'),
     sfSkinTone:         document.getElementById('sf-skin-tone'),
     sfFaceVibe:         document.getElementById('sf-face-vibe'),
     sfExtra:            document.getElementById('sf-extra'),
@@ -1457,7 +1488,14 @@ function getCameraInstruction() {
             if (s.bust)     parts.push(s.bust);
             if (s.waist)    parts.push(s.waist);
             if (s.hips)     parts.push(s.hips);
-            if (s.hairColor && s.hairStyle) parts.push(`${s.hairColor} hair, ${s.hairStyle}`);
+            // 髪型: シルエット + 前髪 + 色 を組み合わせて1フレーズに
+            const sil   = s.hairSilhouette || s.hairStyle || '';
+            const bangs = s.hairBangs || '';
+            const color = s.hairColor || '';
+            if (sil || color) {
+                const hairParts = [color ? `${color} hair` : '', sil, bangs].filter(Boolean);
+                parts.push(hairParts.join(', '));
+            }
             if (s.skinTone) parts.push(`${s.skinTone} skin`);
             if (s.faceVibe) parts.push(`makeup: ${s.faceVibe}`);
             if (s.eyes)     parts.push(s.eyes);
@@ -1475,23 +1513,24 @@ function getCameraInstruction() {
 
         function readForm() {
             return {
-                id:        editingSubjectId,
-                name:      els.sfName.value.trim(),
-                age:       els.sfAge.value,
-                fashion:   els.sfFashion.value,
-                vibe:      els.sfVibe.value,
-                faceVibe:  els.sfFaceVibe.value,
-                eyes:      els.sfEyes.value,
-                jawline:   els.sfJawline.value,
-                hairColor: els.sfHairColor.value,
-                hairStyle: els.sfHairStyle.value,
-                frame:     els.sfFrame.value,
-                height:    els.sfHeight.value,
-                bust:      els.sfBust.value,
-                skinTone:  els.sfSkinTone.value,
-                hips:      els.sfHips.value,
-                waist:     els.sfWaist.value,
-                extra:     els.sfExtra.value.trim(),
+                id:           editingSubjectId,
+                name:         els.sfName.value.trim(),
+                age:          els.sfAge.value,
+                fashion:      els.sfFashion.value,
+                vibe:         els.sfVibe.value,
+                faceVibe:     els.sfFaceVibe.value,
+                eyes:         els.sfEyes.value,
+                jawline:      els.sfJawline.value,
+                hairColor:    els.sfHairColor.value,
+                hairSilhouette: document.getElementById('sf-hair-silhouette')?.value || '',
+                hairBangs:    document.getElementById('sf-hair-bangs')?.value || '',
+                frame:        els.sfFrame.value,
+                height:       els.sfHeight.value,
+                bust:         els.sfBust.value,
+                skinTone:     els.sfSkinTone.value,
+                hips:         els.sfHips.value,
+                waist:        els.sfWaist.value,
+                extra:        els.sfExtra.value.trim(),
             };
         }
 
@@ -1504,7 +1543,12 @@ function getCameraInstruction() {
             els.sfEyes.value      = s.eyes      || '';
             els.sfJawline.value   = s.jawline   || '';
             els.sfHairColor.value = s.hairColor || 'jet black';
-            els.sfHairStyle.value = s.hairStyle || 'long wavy, loose';
+            const silEl = document.getElementById('sf-hair-silhouette');
+            const bangEl = document.getElementById('sf-hair-bangs');
+            if (silEl)  silEl.value  = s.hairSilhouette || 'long wavy, loose and voluminous';
+            if (bangEl) bangEl.value = s.hairBangs      || '';
+            // 旧データ互換: hairStyle があれば silhouette にマッピング
+            if (!s.hairSilhouette && s.hairStyle && silEl) silEl.value = s.hairStyle;
             els.sfFrame.value     = s.frame     || 'slim';
             els.sfHeight.value    = s.height    || '';
             els.sfBust.value      = s.bust      || '';
@@ -1719,7 +1763,8 @@ function getCameraInstruction() {
             els.sfEyes               = document.getElementById('sf-eyes');
             els.sfJawline            = document.getElementById('sf-jawline');
             els.sfHairColor          = document.getElementById('sf-hair-color');
-            els.sfHairStyle          = document.getElementById('sf-hair-style');
+            els.sfHairSilhouette     = document.getElementById('sf-hair-silhouette');
+            els.sfHairBangs          = document.getElementById('sf-hair-bangs');
             els.sfFrame              = document.getElementById('sf-frame');
             els.sfHeight             = document.getElementById('sf-height');
             els.sfBust               = document.getElementById('sf-bust');
@@ -1763,7 +1808,7 @@ function getCameraInstruction() {
             els.importSubjectsInput.addEventListener('change', e => { if (e.target.files[0]) importSubjects(e.target.files[0]); });
 
             // プレビュー自動更新
-            ['sfAge','sfFashion','sfVibe','sfFaceVibe','sfEyes','sfJawline','sfHairColor','sfHairStyle','sfFrame','sfHeight','sfBust','sfSkinTone','sfHips','sfWaist'].forEach(k => {
+            ['sfAge','sfFashion','sfVibe','sfFaceVibe','sfEyes','sfJawline','sfHairColor','sfHairSilhouette','sfHairBangs','sfFrame','sfHeight','sfBust','sfSkinTone','sfHips','sfWaist'].forEach(k => {
                 els[k] && els[k].addEventListener('change', updateSubjectPreview);
             });
             els.sfExtra.addEventListener('input', updateSubjectPreview);
@@ -1867,21 +1912,107 @@ function getCameraInstruction() {
                 { en: "romantic, dreamy, soft focus mood",                    ja: "ロマンチック・夢見がち・ふんわり" },
                 { en: "candid, caught-off-guard, natural",                    ja: "自然体・不意打ち・素の表情" },
             ],
+            hair: [
+                { en: "jet black long straight hair, blunt bangs",            ja: "黒髪ロング・ぱっつん前髪" },
+                { en: "dark brown long wavy hair, loose and voluminous",      ja: "ブラウンロングウェーブ・ゆるふわ" },
+                { en: "short bob, chin-length, jet black",                    ja: "黒髪ショートボブ" },
+                { en: "bleached blonde wolf cut with curtain bangs",          ja: "金髪ウルフカット・カーテンバング" },
+                { en: "ash brown medium hair, see-through bangs",             ja: "アッシュブラウンミディアム・シースルーバング" },
+                { en: "twin tails, jet black, high pigtails",                 ja: "黒髪ツインテール" },
+                { en: "high ponytail, sleek jet black hair",                  ja: "黒髪高めポニーテール" },
+                { en: "pink inner color highlights, dark base, loose",        ja: "インナーカラーピンク・ダークベース" },
+                { en: "silver ash long hair, no bangs, center part",          ja: "シルバーアッシュロング・前髪なし" },
+                { en: "natural perm, loose curls, chestnut brown",            ja: "栗色パーマ・ゆるカール" },
+                { en: "hime cut, jet black, straight with side panels",       ja: "姫カット・漆黒" },
+                { en: "very short pixie cut, dark brown",                     ja: "ダークブラウン超ショート" },
+                { en: "messy half-up bun, dark hair, loose strands",          ja: "ハーフアップお団子・後れ毛あり" },
+                { en: "platinum blonde, very long past waist",                ja: "プラチナブロンド超ロング" },
+                { en: "dark blue-black hair, blunt micro bangs",              ja: "ブルーブラック・マイクロバング" },
+            ],
+            body: [
+                { en: "slim, petite, delicate frame, thin limbs",             ja: "華奢・細身・小柄" },
+                { en: "slim average build with soft feminine curves",         ja: "スリム〜普通・ソフトカーブ" },
+                { en: "average, toned and athletic, defined muscles",         ja: "普通・引き締まり・筋肉感あり" },
+                { en: "tall lean model figure, long limbs",                   ja: "モデル体型・高身長・長い手足" },
+                { en: "curvy hourglass, full bust and wide hips, slim waist", ja: "グラビア系・グラマラス・くびれあり" },
+                { en: "soft chubby body, slight belly, plump round face",     ja: "ぽっちゃり・お腹やや丸い・ふっくら顔" },
+                { en: "chubby build, full arms and thighs, round belly",      ja: "ぽっちゃり強め・丸みのある体型" },
+                { en: "fat heavy-set body, large belly, thick limbs",         ja: "太め・デブ寄り・太い手足とお腹" },
+                { en: "very large obese figure, extremely thick limbs, huge belly", ja: "かなり太め・大柄" },
+                { en: "petite with large bust, small frame but full chest",   ja: "小柄なのにグラビア系バスト" },
+                { en: "wide hips and thick thighs, slender upper body",       ja: "洋梨体型・下半身ぽっちゃり" },
+                { en: "athletic body, broad shoulders, sporty muscular",      ja: "スポーツ体型・がっしり系" },
+            ],
+            expression: [
+                { en: "blank expressionless stare, dead eyes, poker face",    ja: "無表情・死んだ目・ポーカーフェイス" },
+                { en: "soft gentle smile, relaxed and warm",                  ja: "柔らかい微笑み・穏やか" },
+                { en: "big open laugh, eyes squinting, teeth showing",        ja: "満面の笑い・目が細くなる" },
+                { en: "pouty lips, slight frown, sulky look",                 ja: "不満そうな顔・ふくれっ面" },
+                { en: "tongue out, playful and cheeky",                       ja: "舌を出す・茶目っ気たっぷり" },
+                { en: "surprised wide eyes, open mouth, shocked",             ja: "驚いた顔・目を丸く・口が開く" },
+                { en: "tired drowsy half-lidded eyes, sleepy look",           ja: "眠そうな目・だるい顔" },
+                { en: "smirk, one corner of lips raised, confident",          ja: "片側だけ上がった笑い・自信顔" },
+                { en: "biting lower lip, nervous or seductive",               ja: "下唇を噛む・緊張またはセクシー" },
+                { en: "crying, teary eyes, flushed cheeks",                   ja: "泣き顔・涙目・赤い頬" },
+                { en: "looking away wistfully, distant gaze",                 ja: "視線をそらす・遠い目" },
+                { en: "winking one eye, cute and playful",                    ja: "ウインク・可愛いポーズ" },
+            ],
+            accessory: [
+                { en: "no accessories, clean minimal look",                   ja: "アクセなし・シンプル" },
+                { en: "black choker with small silver charm",                  ja: "黒チョーカー・シルバーチャーム" },
+                { en: "small hoop earrings, minimalist",                      ja: "小さなフープピアス" },
+                { en: "round wire-frame glasses",                             ja: "丸眼鏡・ワイヤーフレーム" },
+                { en: "cat-eye frame glasses",                                ja: "猫目フレーム眼鏡" },
+                { en: "hair clip, small decorative pin on side",              ja: "ヘアピン・サイドに小さなデコピン" },
+                { en: "scrunchie on wrist, casual",                           ja: "手首にシュシュ・カジュアル" },
+                { en: "layered necklaces, dainty chains",                     ja: "レイヤードネックレス・細チェーン" },
+                { en: "headband, wide fabric type",                           ja: "ヘアバンド・ファブリック" },
+                { en: "ear cuff on one ear, edgy",                            ja: "片耳イヤーカフ・エッジー" },
+                { en: "baseball cap, worn slightly back",                     ja: "キャップ・少し後ろにかぶる" },
+                { en: "beanie hat pulled low",                                ja: "ニット帽を目深にかぶる" },
+                { en: "oversized bow in hair, cute",                          ja: "大きなリボン・ヘアアクセ" },
+            ],
+            legwear: [
+                { en: "bare legs, no legwear",                                ja: "素足・レッグウェアなし" },
+                { en: "white thigh-high stockings with lace tops",            ja: "白ニーハイソックス・レース" },
+                { en: "black thigh-high stockings",                           ja: "黒ニーハイソックス" },
+                { en: "black sheer stockings, pantyhose",                     ja: "黒ストッキング" },
+                { en: "fishnet stockings, mesh pattern",                      ja: "網タイツ・フィッシュネット" },
+                { en: "white loose socks, scrunched down at ankles",          ja: "白ルーズソックス" },
+                { en: "knee-high boots, black leather",                       ja: "黒レザーニーハイブーツ" },
+                { en: "ankle socks with ruffle trim",                         ja: "フリル付きアンクルソックス" },
+                { en: "sheer patterned tights",                               ja: "柄入りシアータイツ" },
+                { en: "over-knee socks, striped",                             ja: "ボーダーオーバーニーソックス" },
+                { en: "colorful mismatched socks",                            ja: "ミスマッチカラーソックス" },
+            ],
         };
 
         let lastRandomSeed = null; // 最後に使ったランダム設定を保持（履歴再生成用）
 
         function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+        // カテゴリのデフォルトON/OFF設定
+        const RANDOM_CATEGORY_DEFAULTS = {
+            location: true, time: true, outfit: true, pose: true, camera: true, mood: true,
+            hair: false, body: false, expression: false, accessory: false, legwear: false,
+        };
+        // アクティブなカテゴリ状態（UIトグルで変更）
+        let randomCategoryEnabled = Object.assign({}, RANDOM_CATEGORY_DEFAULTS);
+
         function newRandomSeed() {
             const pick = pool => { const item = pickRandom(pool); return { en: item.en, ja: item.ja }; };
             lastRandomSeed = {
-                location: pick(RANDOM_POOLS.location),
-                time:     pick(RANDOM_POOLS.time),
-                outfit:   pick(RANDOM_POOLS.outfit),
-                pose:     pick(RANDOM_POOLS.pose),
-                camera:   pick(RANDOM_POOLS.camera),
-                mood:     pick(RANDOM_POOLS.mood),
+                location:   pick(RANDOM_POOLS.location),
+                time:       pick(RANDOM_POOLS.time),
+                outfit:     pick(RANDOM_POOLS.outfit),
+                pose:       pick(RANDOM_POOLS.pose),
+                camera:     pick(RANDOM_POOLS.camera),
+                mood:       pick(RANDOM_POOLS.mood),
+                hair:       pick(RANDOM_POOLS.hair),
+                body:       pick(RANDOM_POOLS.body),
+                expression: pick(RANDOM_POOLS.expression),
+                accessory:  pick(RANDOM_POOLS.accessory),
+                legwear:    pick(RANDOM_POOLS.legwear),
             };
         }
 
@@ -1890,20 +2021,23 @@ function getCameraInstruction() {
             const cameraOverride = document.getElementById('camera-angle-select')?.value || '';
             const framingOverride = document.getElementById('framing-select')?.value || '';
             const promptOverride = els.promptInput?.value?.trim() || '';
-
-            // カメラ系はプルダウン・プロンプト指定がある場合はランダムを使わない
-            const hasCameraOverride = cameraOverride || framingOverride || /angle|shot|angle|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
+            const hasCameraOverride = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
             const hasPoseOverride   = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptOverride);
 
             let instruction = `\n\n【ランダム生成シード（優先度: プロンプト > カメラプルダウン > このシード）】\n`;
-            instruction += `・Location/Background: ${seed.location.en}\n`;
-            instruction += `・Lighting/Time: ${seed.time.en}\n`;
-            instruction += `・Outfit: ${seed.outfit.en}\n`;
-            if (!hasPoseOverride)   instruction += `・Pose: ${seed.pose.en}\n`;
-            if (!hasCameraOverride) instruction += `・Camera style: ${seed.camera.en}\n`;
-            instruction += `・Mood/Vibe: ${seed.mood.en}\n`;
-            if (hasCameraOverride)  instruction += `・Camera style: [プルダウン/プロンプト指定を優先 - ランダムシードのカメラ設定は無視してください]\n`;
-            if (hasPoseOverride)    instruction += `・Pose: [プロンプト指定を優先 - ランダムシードのポーズは無視してください]\n`;
+            if (randomCategoryEnabled.location)   instruction += `・Location/Background: ${seed.location.en}\n`;
+            if (randomCategoryEnabled.time)        instruction += `・Lighting/Time: ${seed.time.en}\n`;
+            if (randomCategoryEnabled.outfit)      instruction += `・Outfit: ${seed.outfit.en}\n`;
+            if (randomCategoryEnabled.pose && !hasPoseOverride)     instruction += `・Pose: ${seed.pose.en}\n`;
+            if (randomCategoryEnabled.camera && !hasCameraOverride) instruction += `・Camera style: ${seed.camera.en}\n`;
+            if (randomCategoryEnabled.mood)        instruction += `・Mood/Vibe: ${seed.mood.en}\n`;
+            if (randomCategoryEnabled.hair)        instruction += `・Hair: ${seed.hair.en}\n`;
+            if (randomCategoryEnabled.body)        instruction += `・Body type: ${seed.body.en}\n`;
+            if (randomCategoryEnabled.expression)  instruction += `・Facial expression: ${seed.expression.en}\n`;
+            if (randomCategoryEnabled.accessory)   instruction += `・Accessory: ${seed.accessory.en}\n`;
+            if (randomCategoryEnabled.legwear)     instruction += `・Legwear/Footwear: ${seed.legwear.en}\n`;
+            if (hasCameraOverride) instruction += `・Camera style: [プルダウン/プロンプト指定を優先]\n`;
+            if (hasPoseOverride)   instruction += `・Pose: [プロンプト指定を優先]\n`;
             if (baseJson) {
                 instruction += `\n【ベース構成（履歴から）】\n以下のJSONをベースに、上記シードで指定したフィールドのみ差し替えて再生成してください:\n${JSON.stringify(baseJson, null, 2).slice(0, 800)}...`;
             }
@@ -1951,22 +2085,57 @@ function getCameraInstruction() {
             const hasCameraOvr    = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptText);
             const hasPoseOvr      = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptText);
 
-            const labels = [
-                { icon: '📍', label: 'ロケーション', value: seed.location.ja, override: false },
-                { icon: '☀️', label: '時間帯・光源', value: seed.time.ja,     override: false },
-                { icon: '👗', label: '服装',         value: seed.outfit.ja,   override: false },
-                { icon: '🧍', label: 'ポーズ',       value: hasPoseOvr    ? '⚠️ プロンプト指定を優先' : seed.pose.ja,   override: hasPoseOvr },
-                { icon: '📷', label: 'カメラ',       value: hasCameraOvr  ? '⚠️ プルダウン/プロンプト指定を優先' : seed.camera.ja, override: hasCameraOvr },
-                { icon: '🎭', label: 'ムード',       value: seed.mood.ja,     override: false },
+            const ALL_CATS = [
+                { key: 'location',   icon: '📍', label: 'ロケーション' },
+                { key: 'time',       icon: '☀️', label: '時間帯・光源' },
+                { key: 'outfit',     icon: '👗', label: '服装'         },
+                { key: 'pose',       icon: '🧍', label: 'ポーズ'       },
+                { key: 'camera',     icon: '📷', label: 'カメラ'       },
+                { key: 'mood',       icon: '🎭', label: 'ムード'       },
+                { key: 'hair',       icon: '💇', label: '髪型'         },
+                { key: 'body',       icon: '📐', label: '体型'         },
+                { key: 'expression', icon: '😶', label: '表情'         },
+                { key: 'accessory',  icon: '💍', label: 'アクセサリー' },
+                { key: 'legwear',    icon: '🦵', label: '脚・靴下'     },
             ];
-            items.innerHTML = labels.map(l => `
-                <div class="flex gap-2 items-start">
-                    <span class="flex-shrink-0 w-24 text-slate-500 text-[11px]">${l.icon} ${l.label}</span>
-                    <span class="${l.override ? 'text-amber-400/70 italic text-[11px]' : 'text-slate-200 text-[11px]'}">${l.value}</span>
-                </div>`).join('');
+            const allOn = ALL_CATS.every(function(c){ return randomCategoryEnabled[c.key]; });
+
+            let gridHTML = '';
+            ALL_CATS.forEach(function(c) {
+                const enabled    = randomCategoryEnabled[c.key];
+                const isOverride = (c.key === 'camera' && hasCameraOvr) || (c.key === 'pose' && hasPoseOvr);
+                const val        = (seed[c.key] && seed[c.key].ja) ? seed[c.key].ja : '';
+                const chk        = enabled ? '✓' : '';
+                const btnCls     = enabled ? 'bg-amber-500 border-amber-500 text-white' : 'bg-transparent border-slate-600 text-transparent';
+                const valCls     = enabled ? (isOverride ? 'text-amber-400 italic' : 'text-slate-200') : 'text-slate-600 line-through';
+                const dispVal    = isOverride ? '⚠️ 指定優先' : val;
+                gridHTML += '<div class="flex items-start gap-1.5">'
+                          + '<button onclick="toggleCategory(\'' + c.key + '\')" class="flex-shrink-0 mt-0.5 w-4 h-4 rounded border text-[9px] font-bold flex items-center justify-center transition-colors ' + btnCls + '">' + chk + '</button>'
+                          + '<div class="min-w-0"><span class="text-[10px] text-slate-500">' + c.icon + ' ' + c.label + '</span>'
+                          + '<div class="' + valCls + ' text-[11px] truncate leading-tight">' + dispVal + '</div></div>'
+                          + '</div>';
+            });
+
+            const allBtnCls = allOn ? 'border-amber-500/50 text-amber-400' : 'border-slate-600 text-slate-400';
+            const allBtnTxt = allOn ? '✦ 全OFF' : '✦ 全ON';
+            items.innerHTML = '<div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-700/50">'
+                + '<span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">カテゴリ選択</span>'
+                + '<button onclick="toggleAllCategories(' + String(allOn) + ')" class="text-[10px] px-2 py-0.5 rounded border ' + allBtnCls + ' hover:text-white transition-colors">' + allBtnTxt + '</button>'
+                + '</div>'
+                + '<div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mb-3">' + gridHTML + '</div>';
 
             panel.classList.remove('hidden');
             lucide.createIcons();
+        }
+
+        function toggleCategory(key) {
+            randomCategoryEnabled[key] = !randomCategoryEnabled[key];
+            showRandomPreviewPanel(lastRandomSeed);
+        }
+        function toggleAllCategories(currentlyAllOn) {
+            const newVal = !currentlyAllOn;
+            Object.keys(randomCategoryEnabled).forEach(k => randomCategoryEnabled[k] = newVal);
+            showRandomPreviewPanel(lastRandomSeed);
         }
 
         // 「これで生成」ボタン → 実際にAPI呼び出し
