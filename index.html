@@ -143,74 +143,119 @@
                 </span>
             </div>
             <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
-            <!-- カメラアングル -->
+            <!-- camera_style -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <i data-lucide="camera" class="w-3.5 h-3.5 text-slate-500"></i>
-                <select id="camera-angle-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
-                    <option value="">アングル: 指定なし</option>
-                    <optgroup label="── 高さ ──">
-                        <option value="eye level shot">👁️ アイレベル</option>
-                        <option value="low angle shot">⬇️ ローアングル</option>
-                        <option value="worm's eye view">🐛 虫の目</option>
-                        <option value="ground level perspective">🏔️ グラウンドレベル</option>
-                        <option value="high angle shot">⬆️ ハイアングル</option>
-                        <option value="bird's eye view">🦅 鳥瞰図</option>
-                        <option value="top-down perspective">🔝 トップダウン</option>
-                        <option value="overhead view">📐 オーバーヘッド</option>
+                <select id="ph-camera-style" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="カメラスタイル">
+                    <option value="">スタイル: 指定なし</option>
+                    <optgroup label="── スマホ系 ──">
+                        <option value="smartphone candid snapshot, social media realism, low-resolution, compression artifacts, slight motion blur, mild grain/noise">📱 スマホ・SNSスナップ</option>
+                        <option value="realistic iPhone front camera selfie aesthetic, smartphone photography">🤳 iPhoneセルフィー</option>
+                        <option value="smartphone mirror selfie, social media realism, soft beauty smoothing">🪞 ミラーセルフィー</option>
+                        <option value="smartphone direct flash bedroom snapshot">⚡ スマホ直フラッシュ</option>
+                        <option value="realistic smartphone paparazzi candid">📸 スマホ・パパラッチ風</option>
                     </optgroup>
-                    <optgroup label="── 距離 ──">
-                        <option value="extreme close-up">🔍 超クローズアップ</option>
-                        <option value="close-up shot">📷 クローズアップ</option>
-                        <option value="medium shot">🧍 ミディアム</option>
-                        <option value="wide shot">🌅 ワイド</option>
-                        <option value="long shot">🏞️ ロング</option>
-                        <option value="extreme long shot">🌐 超ロング</option>
+                    <optgroup label="── フラッシュ系 ──">
+                        <option value="Direct flash photography, CCD digital camera aesthetic, high ISO vibe">🔦 フラッシュ撮影・CCD風</option>
+                        <option value="digital point-and-shoot flash photography, raw social media aesthetic">📷 コンデジフラッシュ</option>
                     </optgroup>
-                    <optgroup label="── 組み合わせ ──">
-                        <option value="low angle close-up">⬇️🔍 ローアングル＋クローズアップ</option>
-                        <option value="high angle wide shot">⬆️🌅 ハイアングル＋ワイド</option>
-                        <option value="bird's eye view medium shot">🦅🧍 鳥瞰図＋ミディアム</option>
-                        <option value="worm's eye view long shot">🐛🏞️ 虫の目＋ロング</option>
-                        <option value="overhead extreme close-up">🔝🔍 真上＋超クローズアップ</option>
-                        <option value="ground level wide angle">🏔️🌅 グラウンド＋ワイド</option>
-                        <option value="looking up from close distance">📸 近距離から見上げ</option>
-                        <option value="looking down from a distance">📸 遠距離から見下ろし</option>
-                        <option value="tilted low angle medium shot">↗️ ダッチ＋ローアングル</option>
+                    <optgroup label="── 本格カメラ系 ──">
+                        <option value="high-end digital portrait with a natural, candid boudoir feel">🎞️ ハイエンドデジタル・バドワール</option>
+                        <option value="realistic indoor cosplay portrait, clean digital look">🖼️ 屋内コスプレポートレート</option>
+                        <option value="realistic smartphone photography, graduation day snapshot aesthetic">🎓 卒業式スナップ</option>
                     </optgroup>
                 </select>
             </div>
             <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
-            <!-- 画角 -->
+            <!-- angle -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="move-vertical" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="ph-angle" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="アングル">
+                    <option value="">アングル: 指定なし</option>
+                    <optgroup label="── 高さ・向き ──">
+                        <option value="eye-level, straight-on">👁️ アイレベル・正面</option>
+                        <option value="eye-level selfie angle, close-up">🤳 アイレベル・セルフィー</option>
+                        <option value="eye-level to slightly above, mirror reflection composition">🪞 アイレベル・ミラー</option>
+                        <option value="slightly above eye-level, close and intimate">🔼 やや見下ろし・近距離</option>
+                        <option value="slightly low to eye-level perspective, straight-on">🔽 やや見上げ・正面</option>
+                        <option value="high angle, looking down">⬆️ ハイアングル（見下ろし）</option>
+                        <option value="steep top-down angle, slight dutch tilt, close to the face">🔝 真上から・ダッチティルト</option>
+                        <option value="arm's length front camera selfie, slightly upward">📱 セルフィー・やや上向き</option>
+                        <option value="slightly low, half-side">⬇️ やや低め・半横</option>
+                        <option value="eye level with slight low angle perspective">↗️ アイレベル＋ローアングル気味</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- shot_type -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
                 <i data-lucide="scan" class="w-3.5 h-3.5 text-slate-500"></i>
-                <select id="framing-select" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer">
-                    <option value="">画角: 指定なし</option>
+                <select id="ph-shot-type" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="ショットタイプ">
+                    <option value="">構図: 指定なし</option>
                     <optgroup label="── 全身・広め ──">
-                        <option value="full body shot">🧍 全身</option>
-                        <option value="full length portrait">🖼️ フルレングス</option>
-                        <option value="panoramic wide shot">🌐 パノラマ</option>
-                        <option value="establishing shot">🏙️ エスタブリッシング</option>
+                        <option value="full-body vertical portrait, head to toe, subject slightly off-center">🧍 全身・縦位置</option>
                     </optgroup>
-                    <optgroup label="── 上半身・バスト ──">
-                        <option value="waist-up shot">👗 腰上</option>
-                        <option value="bust-up shot">👕 バストアップ</option>
-                        <option value="upper body framing">💪 上半身</option>
-                        <option value="medium close-up">📸 ミディアムCU</option>
+                    <optgroup label="── 上半身 ──">
+                        <option value="waist-up portrait, full outfit visible">👗 腰上・全衣装見せ</option>
+                        <option value="three-quarter body portrait, face and upper torso dominant in frame">📐 3/4ポートレート</option>
+                        <option value="upper body, center focus">💪 上半身・センター</option>
+                        <option value="mid-shot, framing from just above the head down to the mid-thighs">🧍 ミッドショット（頭〜太もも）</option>
+                        <option value="mid-shot, chest and shoulders dominating">👕 ミッドショット（胸・肩）</option>
                     </optgroup>
-                    <optgroup label="── 顔・寄り ──">
-                        <option value="headshot">🙂 ヘッドショット</option>
-                        <option value="face close-up">😊 顔CU</option>
-                        <option value="extreme close-up on eyes">👁️ 目CU</option>
-                        <option value="macro shot">🔬 マクロ</option>
-                        <option value="detail close-up">🔎 ディテールCU</option>
+                    <optgroup label="── バストアップ・顔 ──">
+                        <option value="medium close-up bust portrait">👤 バストアップ</option>
+                        <option value="waist-up portrait">👕 ウエストアップ</option>
+                        <option value="close-up face with upper body and thighs included">😊 顔CU＋上半身</option>
+                        <option value="vertical 3/4 portrait, face and upper torso dominant in frame">🖼️ 縦3/4・顔メイン</option>
                     </optgroup>
-                    <optgroup label="── 特殊 ──">
-                        <option value="three-quarter view">↗️ スリークォーター</option>
-                        <option value="profile shot">👤 横顔</option>
-                        <option value="over-the-shoulder shot">🫂 オーバーショルダー</option>
-                        <option value="dutch angle">📐 ダッチアングル</option>
-                        <option value="fisheye lens effect">🐟 魚眼</option>
-                        <option value="front-facing shot">🎯 正面</option>
+                </select>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- lighting -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="sun" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="ph-lighting" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="ライティング">
+                    <option value="">照明: 指定なし</option>
+                    <optgroup label="── フラッシュ系 ──">
+                        <option value="harsh direct frontal flash, rapid fall-off to black background">⚡ 直フラッシュ・背景暗落ち</option>
+                        <option value="direct, harsh frontal camera flash">⚡ 直フラッシュ（均一）</option>
+                        <option value="single on-camera flash in dark room">🔦 暗室フラッシュ1灯</option>
+                    </optgroup>
+                    <optgroup label="── 自然光 ──">
+                        <option value="natural overcast daylight, cool-toned, no flash, soft shadows">☁️ 曇天・自然光・ノーフラッシュ</option>
+                        <option value="bright natural daylight from side windows creating soft shadows and highlights">🌤️ サイド窓・自然光</option>
+                        <option value="soft focused city light gently illuminating only the woman, dramatic high-contrast with deep shadows in the room">🌃 夜景・シティライト</option>
+                    </optgroup>
+                    <optgroup label="── 室内光 ──">
+                        <option value="soft diffused warm key light from front-left with gentle ambient fill, mild shadows">💡 ソフト拡散・前左から暖色キー</option>
+                        <option value="single soft window light from camera-left, cool-toned low-key exposure, gentle shadows">🪟 左サイド窓・クールトーン</option>
+                        <option value="soft diffused indoor ambient light, minimal harsh shadows, mild frontal fill from the room">🏠 室内アンビエント・拡散</option>
+                        <option value="diffused indoor ambient lighting">🏠 室内アンビエント（シンプル）</option>
+                        <option value="soft indoor ambient">🕯️ ソフト室内アンビエント</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- depth_of_field -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="aperture" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="ph-dof" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="被写界深度（DOF）">
+                    <option value="">DOF: 指定なし</option>
+                    <optgroup label="── 浅め（ボケ強め）──">
+                        <option value="shallow depth of field, razor sharp on face and chest, heavily blurred dark background">🌸 超浅DOF・顔＋胸シャープ</option>
+                        <option value="moderate shallow depth, background softly blurred">🌺 やや浅め・背景ソフトボケ</option>
+                        <option value="moderate shallow DOF, background subtly softer than subject">🌼 やや浅め・主体より背景ソフト</option>
+                        <option value="shallow crowd blur">👥 浅め・群衆ボケ</option>
+                    </optgroup>
+                    <optgroup label="── 中程度 ──">
+                        <option value="moderate depth of field, subject sharper than the background">📷 中程度・主体シャープ</option>
+                        <option value="moderate depth, overall slightly soft focus">🔵 中程度・全体やや柔らか</option>
+                        <option value="medium with background stairs softly blurred">🟡 中程度・背景ソフト</option>
+                    </optgroup>
+                    <optgroup label="── 深め（シャープ）──">
+                        <option value="deep enough to keep face and torso sharp">🔷 深め・顔＋胴体シャープ</option>
+                        <option value="deep, flat perspective due to the wall being immediately behind the subject">🟦 深め・壁密着フラット</option>
+                        <option value="sharp focus on face, slight background blur">🎯 顔ピンシャープ・背景微ボケ</option>
                     </optgroup>
                 </select>
             </div>
@@ -1184,15 +1229,14 @@ function init() {
         if (savedAspect) els.aspectSelect.value = savedAspect;
         els.aspectSelect.addEventListener('change', () => localStorage.setItem(ASPECT_KEY, els.aspectSelect.value));
 
-        // カメラアングル・画角 復元
-        const camAngleEl  = document.getElementById('camera-angle-select');
-        const framingEl   = document.getElementById('framing-select');
-        const savedAngle  = localStorage.getItem('grok_gen_camera_angle');
-        const savedFrame  = localStorage.getItem('grok_gen_framing');
-        if (savedAngle && camAngleEl)  camAngleEl.value  = savedAngle;
-        if (savedFrame && framingEl)   framingEl.value   = savedFrame;
-        camAngleEl?.addEventListener('change', () => localStorage.setItem('grok_gen_camera_angle', camAngleEl.value));
-        framingEl?.addEventListener('change',  () => localStorage.setItem('grok_gen_framing',      framingEl.value));
+        // Photography設定 復元
+        ['ph-camera-style', 'ph-angle', 'ph-shot-type', 'ph-lighting', 'ph-dof'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const saved = localStorage.getItem('grok_gen_' + id);
+            if (saved) el.value = saved;
+            el.addEventListener('change', () => localStorage.setItem('grok_gen_' + id, el.value));
+        });
 
     // プリセット復元
     const savedPreset = localStorage.getItem(PRESET_KEY) || 'photorealism';
@@ -1430,13 +1474,19 @@ function getAspectRatio() {
 }
 
 function getCameraInstruction() {
-            const angle   = document.getElementById('camera-angle-select')?.value || '';
-            const framing = document.getElementById('framing-select')?.value || '';
+            const cameraStyle = document.getElementById('ph-camera-style')?.value || '';
+            const angle       = document.getElementById('ph-angle')?.value || '';
+            const shotType    = document.getElementById('ph-shot-type')?.value || '';
+            const lighting    = document.getElementById('ph-lighting')?.value || '';
+            const dof         = document.getElementById('ph-dof')?.value || '';
             const parts = [];
-            if (angle)   parts.push(`camera angle: ${angle}`);
-            if (framing) parts.push(`framing: ${framing}`);
+            if (cameraStyle) parts.push(`camera_style: ${cameraStyle}`);
+            if (angle)       parts.push(`angle: ${angle}`);
+            if (shotType)    parts.push(`shot_type: ${shotType}`);
+            if (lighting)    parts.push(`lighting: ${lighting}`);
+            if (dof)         parts.push(`depth_of_field: ${dof}`);
             if (!parts.length) return '';
-            return `\n\n【カメラコントロール】\n以下のカメラ設定を厳守してください（ユーザー指示より優先）:\n${parts.join(', ')}`;
+            return `\n\n【カメラコントロール】\n以下のphotography設定を厳守してください（ユーザー指示より優先）。JSONのphotographyフィールドに必ず反映すること:\n${parts.join('\n')}`;
         }
 
         function getAspectInstruction() {
@@ -2022,10 +2072,14 @@ function getCameraInstruction() {
 
         function buildRandomInstruction(baseJson) {
             const seed = lastRandomSeed;
-            const cameraOverride  = document.getElementById('camera-angle-select')?.value || '';
-            const framingOverride = document.getElementById('framing-select')?.value || '';
+            const phCameraStyle = document.getElementById('ph-camera-style')?.value || '';
+            const phAngle       = document.getElementById('ph-angle')?.value || '';
+            const phShotType    = document.getElementById('ph-shot-type')?.value || '';
+            const phLighting    = document.getElementById('ph-lighting')?.value || '';
+            const phDof         = document.getElementById('ph-dof')?.value || '';
             const promptOverride  = els.promptInput?.value?.trim() || '';
-            const hasCameraOverride = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
+            const hasCameraOverride = phCameraStyle || phAngle || phShotType || phLighting || phDof
+                || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptOverride);
             const hasPoseOverride   = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptOverride);
 
             let instruction = '\n\n【ランダム生成シード（優先度: プロンプト > カメラプルダウン > このシード）】\n';
@@ -2086,10 +2140,14 @@ function getCameraInstruction() {
             const items = document.getElementById('random-preview-items');
             if (!panel || !items || !seed) return;
 
-            const cameraOverride  = document.getElementById('camera-angle-select')?.value || '';
-            const framingOverride = document.getElementById('framing-select')?.value || '';
+            const phCameraStyle2 = document.getElementById('ph-camera-style')?.value || '';
+            const phAngle2       = document.getElementById('ph-angle')?.value || '';
+            const phShotType2    = document.getElementById('ph-shot-type')?.value || '';
+            const phLighting2    = document.getElementById('ph-lighting')?.value || '';
+            const phDof2         = document.getElementById('ph-dof')?.value || '';
             const promptText      = els.promptInput?.value?.trim() || '';
-            const hasCameraOvr    = cameraOverride || framingOverride || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptText);
+            const hasCameraOvr    = phCameraStyle2 || phAngle2 || phShotType2 || phLighting2 || phDof2
+                || /angle|shot|close.?up|wide|pov|framing|lens|camera/i.test(promptText);
             const hasPoseOvr      = /pose|stand|sit|lie|kneel|lean|walk|crouch|stretch/i.test(promptText);
 
             const ALL_CATS = [
