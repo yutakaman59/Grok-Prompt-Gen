@@ -123,7 +123,7 @@
             </div>
         </div>
         <!-- 2段目2行目: 被写体 / カメラアングル / 画角 -->
-        <div class="max-w-7xl mx-auto px-4 h-9 flex items-center gap-3 overflow-x-auto">
+        <div class="max-w-7xl mx-auto px-4 h-9 flex items-center gap-2 overflow-x-auto scrollbar-none">
             <!-- 被写体プリセット -->
             <div class="flex items-center gap-2 flex-shrink-0">
                 <button id="open-subjects-btn" class="flex items-center gap-1.5 hover:text-grok-500 text-xs text-slate-400 transition-colors whitespace-nowrap">
@@ -141,6 +141,40 @@
                     <span class="text-purple-400 max-w-[70px] truncate" id="active-sub-name"></span>
                     <button id="clear-sub-btn" class="text-slate-600 hover:text-red-400 transition-colors text-[10px]">✕</button>
                 </span>
+            </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <!-- scene / background -->
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
+                <select id="ph-scene" class="bg-transparent border-0 text-xs focus:outline-none text-slate-300 cursor-pointer" title="シーン・背景">
+                    <option value="">シーン指定なし</option>
+                    <optgroup label="室内">
+                        <option value="dim bedroom interior, rumpled bed sheets, clothes scattered casually">寝室・乱れたシーツ</option>
+                        <option value="onsen ryokan room, tatami floor, shoji screen light">温泉旅館・畳・障子</option>
+                        <option value="backstage dressing room, vanity mirror bulbs">楽屋・バニティミラー</option>
+                        <option value="izakaya booth, warm amber lantern light">居酒屋個室・提灯</option>
+                        <option value="rainy cafe window seat, condensation on glass">カフェ窓際・結露</option>
+                        <option value="apartment balcony, evening city lights below">ベランダ・夜景</option>
+                        <option value="indoor pool, turquoise water reflections">屋内プール・水面</option>
+                        <option value="shopping mall escalator, bright retail lighting">ショッピングモール</option>
+                    </optgroup>
+                    <optgroup label="屋外・都市">
+                        <option value="outdoor night street, neon-lit alley, Tokyo Shinjuku">新宿・夜のネオン街</option>
+                        <option value="convenience store entrance at night, warm fluorescent light">深夜のコンビニ前</option>
+                        <option value="urban sidewalk, grey stone pavement">都会の歩道・石畳</option>
+                        <option value="rooftop at sunset, city skyline behind her">屋上・夕暮れのスカイライン</option>
+                        <option value="school rooftop, chain-link fence, afternoon sky">学校の屋上・フェンス</option>
+                        <option value="subway platform, harsh fluorescent overhead light">地下鉄ホーム</option>
+                        <option value="crowded train, handrail grip, commute lighting">満員電車・吊り革</option>
+                    </optgroup>
+                    <optgroup label="屋外・自然">
+                        <option value="park bench under cherry blossoms, soft spring light">桜の公園ベンチ</option>
+                        <option value="beach at golden hour, wet sand reflections">ゴールデンアワーのビーチ</option>
+                        <option value="forest trail, dappled sunlight through leaves">森の小道・木漏れ日</option>
+                        <option value="snowy street, breath visible in cold air">雪道・白い吐息</option>
+                        <option value="festival night, paper lanterns, yukata crowd">夜祭り・提灯・浴衣</option>
+                    </optgroup>
+                </select>
             </div>
             <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
             <!-- camera_style -->
@@ -1471,7 +1505,7 @@ function init() {
         els.aspectSelect.addEventListener('change', () => localStorage.setItem(ASPECT_KEY, els.aspectSelect.value));
 
         // Photography設定 復元
-        ['ph-camera-style', 'ph-angle', 'ph-shot-type', 'ph-lighting', 'ph-dof'].forEach(id => {
+        ['ph-camera-style', 'ph-angle', 'ph-shot-type', 'ph-lighting', 'ph-dof', 'ph-scene'].forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
             const saved = localStorage.getItem('grok_gen_' + id);
@@ -1720,14 +1754,17 @@ function getCameraInstruction() {
             const shotType    = document.getElementById('ph-shot-type')?.value || '';
             const lighting    = document.getElementById('ph-lighting')?.value || '';
             const dof         = document.getElementById('ph-dof')?.value || '';
+            const scene       = document.getElementById('ph-scene')?.value || '';
             const parts = [];
             if (cameraStyle) parts.push(`camera_style: ${cameraStyle}`);
             if (angle)       parts.push(`angle: ${angle}`);
             if (shotType)    parts.push(`shot_type: ${shotType}`);
             if (lighting)    parts.push(`lighting: ${lighting}`);
             if (dof)         parts.push(`depth_of_field: ${dof}`);
-            if (!parts.length) return '';
-            return `\n\n【カメラコントロール】\n以下のphotography設定を厳守してください（ユーザー指示より優先）。JSONのphotographyフィールドに必ず反映すること:\n${parts.join('\n')}`;
+            let result = '';
+            if (parts.length) result += `\n\n【カメラコントロール】\n以下のphotography設定を厳守してください（ユーザー指示より優先）。JSONのphotographyフィールドに必ず反映すること:\n${parts.join('\n')}`;
+            if (scene)       result += `\n\n【シーン・背景指定】\nbackground.setting に必ず反映すること: ${scene}`;
+            return result;
         }
 
         function getAspectInstruction() {
@@ -1823,13 +1860,14 @@ function getCameraInstruction() {
             };
             if (s.extra && s.extra.trim()) obj.extra_notes = s.extra.trim();
             function clean(o) {
-                if (Array.isArray(o)) return o;
+                if (Array.isArray(o)) return o.filter(x => x !== '');
                 if (typeof o === 'object' && o !== null) {
                     const r = {};
                     for (const k in o) {
                         const v = clean(o[k]);
                         if (v !== '' && v !== null && v !== undefined &&
-                            !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0))
+                            !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0) &&
+                            !(Array.isArray(v) && v.length === 0))
                             r[k] = v;
                     }
                     return r;
@@ -2031,10 +2069,16 @@ function getCameraInstruction() {
 
         // ── エクスポート / インポート ──
         function exportSubjects() {
+            const cameraSettings = {};
+            ['ph-camera-style','ph-angle','ph-shot-type','ph-lighting','ph-dof','ph-scene'].forEach(id => {
+                const v = localStorage.getItem('grok_gen_' + id);
+                if (v) cameraSettings[id] = v;
+            });
             const data = {
-                version: 1,
+                version: 2,
                 exported_at: new Date().toISOString(),
                 subjects: getSubjects(),
+                camera_settings: cameraSettings,
                 history: JSON.parse(localStorage.getItem('grok_gen_history') || '[]'),
             };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -2051,7 +2095,14 @@ function getCameraInstruction() {
             reader.onload = e => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (data.subjects && Array.isArray(data.subjects)) {
+                    if (data.camera_settings && typeof data.camera_settings === 'object') {
+                    Object.entries(data.camera_settings).forEach(([id, val]) => {
+                        localStorage.setItem('grok_gen_' + id, val);
+                        const el = document.getElementById(id);
+                        if (el) el.value = val;
+                    });
+                }
+                if (data.subjects && Array.isArray(data.subjects)) {
                         const existing = getSubjects();
                         const existingIds = new Set(existing.map(x => x.id));
                         const merged = [...existing, ...data.subjects.filter(x => !existingIds.has(x.id))];
@@ -2770,7 +2821,7 @@ async function handleGenerate() {
 // ===================== 結果表示 =====================
 function parseAndDisplayResult(responseText, promptText) {
     try {
-        let cleanText = responseText.replace(/^```json\n?/i,'').replace(/\n?```$/i,'').trim();
+        let cleanText = responseText.replace(/^\s*```[\w]*\s*/i,'').replace(/\s*```\s*$/i,'').trim();
         const parsed = JSON.parse(cleanText);
         if (!parsed.grok_prompt_json || !parsed.english_prompt || !parsed.japanese_prompt) throw new Error('フォーマット不正');
 
@@ -2805,7 +2856,7 @@ function parseAndDisplayResult(responseText, promptText) {
         }, 50);
 
         // 履歴に保存
-        addHistory({ prompt: promptText || '（ランダム生成）', preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, explanationJa: parsed.explanation_ja || '', randomSeed: lastRandomSeed, timestamp: Date.now() });
+        addHistory({ prompt: promptText || '（ランダム生成）', preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, explanationJa: parsed.explanation_ja || '', randomSeed: lastRandomSeed || null, timestamp: Date.now() });
 
     } catch (error) {
         console.error('Parse Error:', error, responseText);
