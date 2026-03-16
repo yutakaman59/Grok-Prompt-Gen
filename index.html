@@ -55,6 +55,27 @@
             border-color: #14b8a6 !important;
         }
         .copy-flash i { color: #fff !important; }
+        /* ===== NEW: 履歴検索・フィルター ===== */
+        .text-10px { font-size: 10px; }
+        #history-search { transition: border-color .15s; }
+        #history-search:focus { border-color: #14b8a6; outline: none; box-shadow: 0 0 0 1px #14b8a6; }
+        .history-tab { transition: all .15s; cursor: pointer; padding: 3px 2px; border-bottom: 2px solid transparent; font-size: 10px; color: #94a3b8; background: none; border-top: none; border-left: none; border-right: none; }
+        .history-tab.active { border-bottom-color: #14b8a6; color: #14b8a6; }
+        .history-tab:hover:not(.active) { color: #cbd5e1; }
+        .star-btn { transition: all .15s; line-height:1; background:none; border:none; cursor:pointer; padding:2px; flex-shrink:0; }
+        .star-btn.starred svg { fill: #fbbf24; stroke: #fbbf24; color: #fbbf24; }
+        .star-btn:not(.starred) { color: #475569; }
+        .star-btn:hover { transform: scale(1.25); color: #fbbf24; }
+        #camera-preset-modal { display: none; }
+        #camera-preset-modal.show { display: flex; }
+        .camera-preset-card { transition: all .15s; }
+        .camera-preset-card:hover { border-color: #14b8a6 !important; background: rgba(20,184,166,.07) !important; }
+        .multi-char-badge {
+            background: linear-gradient(90deg,rgba(20,184,166,.15),rgba(139,92,246,.15));
+            border:1px solid rgba(139,92,246,.4); border-radius:6px;
+            padding:2px 8px; font-size:10px; color:#c4b5fd;
+            display:inline-flex; align-items:center; gap:4px;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
@@ -291,10 +312,51 @@
                     </optgroup>
                 </select>
             </div>
+            <div class="w-px h-5 bg-slate-700 flex-shrink-0"></div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button id="open-camera-preset-btn" title="カメラプリセット管理"
+                    class="flex items-center gap-1 text-xs text-slate-400 hover:text-grok-400 bg-slate-800/60 hover:bg-slate-700 transition-colors px-2 py-1 rounded border border-slate-700 hover:border-grok-500/60 whitespace-nowrap">
+                    <i data-lucide="bookmark" class="w-3 h-3"></i> プリセット
+                </button>
+                <select id="camera-preset-apply"
+                    class="bg-transparent border border-slate-700 text-xs focus:outline-none text-slate-400 cursor-pointer rounded px-1.5 py-1 hover:border-slate-600 transition-colors max-w-[110px]">
+                    <option value="">── 呼び出す ──</option>
+                </select>
+            </div>
 
         </div>
     </div>
 </header>
+
+<!-- ===== カメラプリセット管理モーダル ===== -->
+<div id="camera-preset-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md mx-3 shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="camera" class="w-4 h-4 text-grok-500"></i> カメラプリセット管理
+            </h2>
+            <button id="close-camera-preset-btn" class="text-slate-500 hover:text-slate-300 transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div class="bg-slate-800/60 rounded-lg p-3 space-y-2">
+                <p class="text-xs font-semibold text-slate-400 mb-1">現在のカメラ設定を保存</p>
+                <div class="flex gap-2">
+                    <input id="camera-preset-name" type="text" placeholder="プリセット名（例: 夜景スナップ）"
+                        class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500">
+                    <button id="save-camera-preset-btn"
+                        class="bg-grok-600 hover:bg-grok-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 flex-shrink-0">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i> 保存
+                    </button>
+                </div>
+            </div>
+            <div id="camera-preset-list" class="space-y-2 max-h-64 overflow-y-auto">
+                <p class="text-xs text-slate-500 text-center py-4">保存済みプリセットはありません</p>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ===== APIキー管理モーダル ===== -->
 <div id="keys-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -713,6 +775,20 @@
                     <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全削除
                 </button>
             </div>
+            <div class="px-3 pt-2 pb-1.5 border-b border-slate-700/40 space-y-1.5">
+                <div class="relative">
+                    <i data-lucide="search" class="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none"></i>
+                    <input id="history-search" type="text" placeholder="履歴を検索..."
+                        class="w-full bg-slate-800 border border-slate-700 rounded-md pl-7 pr-3 py-1.5 text-xs text-slate-300 placeholder-slate-500">
+                </div>
+                <div class="flex gap-0.5">
+                    <button data-htab="all"          class="history-tab active flex-1">すべて</button>
+                    <button data-htab="starred"      class="history-tab flex-1">⭐ お気に入り</button>
+                    <button data-htab="photorealism" class="history-tab flex-1">写実</button>
+                    <button data-htab="anime"        class="history-tab flex-1">Anime</button>
+                    <button data-htab="cinematic"    class="history-tab flex-1">映画</button>
+                </div>
+            </div>
             <div id="history-list" class="flex flex-col max-h-48 sm:max-h-80 overflow-y-auto divide-y divide-slate-700/30">
                 <p id="history-empty" class="text-xs text-slate-500 text-center py-6">履歴はまだありません</p>
             </div>
@@ -830,6 +906,8 @@ const ACTIVE_KEY_IDX_KEY = 'grok_gen_active_key';
 const RATE_LIMIT_PREFIX  = 'grok_gen_rl_';           // + keyIndex
 const HISTORY_KEY        = 'grok_gen_history';
 const PRESET_KEY         = 'grok_gen_preset';
+        const CAMERA_PRESET_KEY  = 'grok_gen_camera_presets';
+        const FAVORITES_KEY      = 'grok_gen_favorites';
 const MODEL_KEY          = 'grok_gen_model';
         const ASPECT_KEY         = 'grok_gen_aspect';
 const MAX_REQUESTS       = 5;
@@ -1547,8 +1625,8 @@ function init() {
 
     // コピー
     els.copyJsonBtn.addEventListener('click', () => { if (!outputData.json) return; copyToClipboard(JSON.stringify(outputData.json, null, 2), els.copyJsonIcon, els.copyJsonText); });
-    els.copyEnBtn.addEventListener('click', () => copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText));
-    els.copyJaBtn.addEventListener('click', () => copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText));
+    els.copyEnBtn.addEventListener('click', () => { if (!outputData?.en) return; copyToClipboard(outputData.en, els.copyEnIcon, els.copyEnText); });
+    els.copyJaBtn.addEventListener('click', () => { if (!outputData?.ja) return; copyToClipboard(outputData.ja, els.copyJaIcon, els.copyJaText); });
     document.getElementById('copy-imagine-btn')?.addEventListener('click', () => {
         const icon = document.getElementById('copy-imagine-icon');
         const text = document.getElementById('copy-imagine-text');
@@ -1565,6 +1643,8 @@ function init() {
 
     // 被写体プリセット（必ずDOMContentLoaded後＝ここで初期化）
     initSubjectPresets();
+    initHistorySearchFilter();
+    initCameraPresets();
 }
 
 // ===================== プリセット =====================
@@ -2570,6 +2650,7 @@ function getCameraInstruction() {
                 const systemInstruction = PRESETS[currentPreset].instruction
                     + getAspectInstruction()
                     + getCameraInstruction()
+                    + getMultiCharInstruction()
                     + getActiveSubjectInstruction()
                     + randomInstruction;
                 const responseData = await fetchWithKeyRotation(userPrompt, systemInstruction);
@@ -2890,10 +2971,52 @@ function randomFromHistory(index) {
             handleRandomGenerate(entry.outputData.json);
         }
 
+        // ===== お気に入り =====
+        function getFavorites() { try { return JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); } catch { return []; } }
+        function saveFavorites(arr) { try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(arr)); } catch(e) {} }
+        function toggleFavorite(ts) {
+            const favs = getFavorites();
+            const idx  = favs.indexOf(ts);
+            if (idx === -1) favs.push(ts); else favs.splice(idx, 1);
+            saveFavorites(favs);
+            renderHistory();
+        }
+
+        // ===== 履歴検索・フィルター初期化 =====
+        let historyFilter = { tab: 'all', query: '' };
+        function initHistorySearchFilter() {
+            const searchInput = document.getElementById('history-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', e => {
+                    historyFilter.query = e.target.value.toLowerCase().trim();
+                    renderHistory();
+                });
+            }
+            document.querySelectorAll('.history-tab').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.history-tab').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    historyFilter.tab = btn.dataset.htab;
+                    renderHistory();
+                });
+            });
+        }
+
         function renderHistory() {
     const history = getHistory();
+    const favs    = getFavorites();
+    const { tab, query } = historyFilter;
+
+    const filtered = history.filter((entry, i) => {
+        const tsKey = String(entry.timestamp);
+        if (tab === 'starred'    && !favs.includes(tsKey))               return false;
+        if (tab !== 'all' && tab !== 'starred' && entry.preset !== tab)  return false;
+        if (query && !(entry.prompt || '').toLowerCase().includes(query)) return false;
+        return true;
+    });
+
     els.historyList.innerHTML = '';
-    if (history.length === 0) {
+    if (filtered.length === 0) {
         if (els.historyEmpty) {
             els.historyEmpty.style.display = 'block';
             els.historyList.appendChild(els.historyEmpty);
@@ -2901,32 +3024,37 @@ function randomFromHistory(index) {
         return;
     }
     if (els.historyEmpty) els.historyEmpty.style.display = 'none';
-    history.forEach((entry, i) => {
+
+    filtered.forEach((entry) => {
+        const realIdx = history.indexOf(entry);
+        const tsKey   = String(entry.timestamp);
+        const starred = favs.includes(tsKey);
         const div = document.createElement('div');
-        div.className = 'history-item px-4 py-3 flex items-start gap-3';
+        div.className = 'history-item px-3 py-2.5 flex items-start gap-2';
         const date = new Date(entry.timestamp);
         const timeStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-        const presetLabel = PRESETS[entry.preset]?.label || entry.preset;
+        const presetLabel = PRESETS[entry.preset]?.label || entry.preset || '';
         div.innerHTML = `
-            <div class="flex-1 min-w-0" onclick="loadHistory(${i})">
+            <button class="star-btn mt-0.5 ${starred ? 'starred' : ''}" onclick="event.stopPropagation(); toggleFavorite('${tsKey}')" title="お気に入り">
+                <i data-lucide="star" class="w-3.5 h-3.5"></i>
+            </button>
+            <div class="flex-1 min-w-0" onclick="loadHistory(${realIdx})">
                 <p class="text-xs text-slate-300 truncate font-medium">${escapeHtml(entry.prompt)}</p>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="text-xs text-slate-500">${timeStr}</span>
-                    <span class="text-xs text-slate-600">·</span>
-                    <span class="text-xs text-slate-500">${presetLabel}</span>
-                    <span class="text-xs text-slate-600">·</span>
-                    <span class="text-xs text-slate-500">${entry.model || 'unknown'}</span>
+                <div class="flex items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-10px text-slate-500">${timeStr}</span>
+                    <span class="text-10px text-slate-600">·</span>
+                    <span class="text-10px text-slate-500">${escapeHtml(presetLabel)}</span>
+                    ${starred ? '<span class="text-10px text-amber-500 font-bold">★</span>' : ''}
                 </div>
             </div>
             <div class="flex gap-1 flex-shrink-0 mt-0.5">
-                <button onclick="event.stopPropagation();randomFromHistory(${i})" class="text-slate-600 hover:text-amber-400 transition-colors" title="ランダムバリエーション生成"><i data-lucide="shuffle" class="w-3 h-3"></i></button>
-                <button onclick="event.stopPropagation();deleteHistory(${i})" class="text-slate-600 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                <button onclick="event.stopPropagation();randomFromHistory(${realIdx})" class="text-slate-600 hover:text-amber-400 transition-colors" title="ランダムバリエーション生成"><i data-lucide="shuffle" class="w-3 h-3"></i></button>
+                <button onclick="event.stopPropagation();deleteHistory(${realIdx})" class="text-slate-600 hover:text-red-400 transition-colors"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
             </div>`;
         els.historyList.appendChild(div);
     });
     lucide.createIcons();
 }
-
 function loadHistory(idx) {
     const history = getHistory();
     const entry = history[idx];
@@ -2974,6 +3102,9 @@ function setLoadingState(isLoading) {
         els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
         lucide.createIcons();
     } else {
+        // ✅ 生成完了・エラー時に retryMessage を必ず非表示
+        els.statusArea.classList.add('hidden');
+        els.retryMessage.classList.add('hidden');
         updateRateLimitUI();
         renderKeysList();
     }
@@ -3025,6 +3156,159 @@ function syntaxHighlight(json) {
         else if (/null/.test(m)) cls = 'json-null';
         return `<span class="${cls}">${m}</span>`;
     });
+}
+
+// ============================================================
+// カメラプリセット機能
+// ============================================================
+function getCameraPresets() {
+    try { return JSON.parse(localStorage.getItem(CAMERA_PRESET_KEY) || '[]'); } catch { return []; }
+}
+function saveCameraPresets(arr) {
+    try { localStorage.setItem(CAMERA_PRESET_KEY, JSON.stringify(arr)); } catch(e) {}
+}
+
+function initCameraPresets() {
+    const openBtn     = document.getElementById('open-camera-preset-btn');
+    const closeBtn    = document.getElementById('close-camera-preset-btn');
+    const modal       = document.getElementById('camera-preset-modal');
+    const saveBtn     = document.getElementById('save-camera-preset-btn');
+    const applySelect = document.getElementById('camera-preset-apply');
+
+    if (openBtn)  openBtn.addEventListener('click',  () => { renderCameraPresetList(); modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const nameEl = document.getElementById('camera-preset-name');
+            const name   = nameEl?.value.trim();
+            if (!name) { nameEl?.focus(); return; }
+            const preset = {
+                id:          Date.now().toString(),
+                name,
+                cameraStyle: document.getElementById('ph-camera-style')?.value || '',
+                angle:       document.getElementById('ph-angle')?.value || '',
+                shotType:    document.getElementById('ph-shot-type')?.value || '',
+                lighting:    document.getElementById('ph-lighting')?.value || '',
+                dof:         document.getElementById('ph-dof')?.value || '',
+                scene:       document.getElementById('ph-scene')?.value || '',
+            };
+            const presets = getCameraPresets();
+            presets.unshift(preset);
+            saveCameraPresets(presets);
+            if (nameEl) nameEl.value = '';
+            renderCameraPresetList();
+            populateCameraPresetSelect();
+        });
+    }
+
+    if (applySelect) {
+        applySelect.addEventListener('change', () => {
+            const id = applySelect.value;
+            if (!id) return;
+            const preset = getCameraPresets().find(p => p.id === id);
+            if (preset) applyCameraPreset(preset);
+            applySelect.value = '';
+        });
+    }
+    populateCameraPresetSelect();
+}
+
+function applyCameraPreset(preset) {
+    const map = {
+        'ph-camera-style': preset.cameraStyle,
+        'ph-angle':        preset.angle,
+        'ph-shot-type':    preset.shotType,
+        'ph-lighting':     preset.lighting,
+        'ph-dof':          preset.dof,
+        'ph-scene':        preset.scene,
+    };
+    Object.entries(map).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined) {
+            el.value = val;
+            localStorage.setItem('grok_gen_' + id, val);
+        }
+    });
+}
+
+function renderCameraPresetList() {
+    const list = document.getElementById('camera-preset-list');
+    if (!list) return;
+    const presets = getCameraPresets();
+    if (presets.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">保存済みプリセットはありません</p>';
+        return;
+    }
+    list.innerHTML = '';
+    presets.forEach(p => {
+        const safeP = JSON.stringify(p).replace(/"/g, '&quot;');
+        const div = document.createElement('div');
+        div.className = 'camera-preset-card bg-slate-800/60 border border-slate-700 rounded-lg p-3';
+        div.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-medium text-slate-200 truncate">${escapeHtml(p.name)}</span>
+                <div class="flex gap-1.5 flex-shrink-0">
+                    <button onclick="applyCameraPreset(JSON.parse(this.dataset.p)); document.getElementById('camera-preset-modal').classList.remove('show');"
+                        data-p="${safeP}"
+                        class="text-xs text-grok-400 hover:text-grok-300 bg-grok-500/10 hover:bg-grok-500/20 px-2 py-1 rounded transition-colors">
+                        適用
+                    </button>
+                    <button onclick="deleteCameraPreset('${p.id}')"
+                        class="text-slate-500 hover:text-red-400 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+            <p class="text-10px text-slate-500 mt-1 truncate">
+                ${escapeHtml([p.cameraStyle, p.angle, p.shotType].filter(Boolean).join(' / ') || '（設定なし）')}
+            </p>`;
+        list.appendChild(div);
+    });
+    lucide.createIcons();
+}
+
+function deleteCameraPreset(id) {
+    saveCameraPresets(getCameraPresets().filter(p => p.id !== id));
+    renderCameraPresetList();
+    populateCameraPresetSelect();
+}
+
+function populateCameraPresetSelect() {
+    const sel = document.getElementById('camera-preset-apply');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">── プリセットを呼び出す ──</option>';
+    getCameraPresets().forEach(p => {
+        const opt = document.createElement('option');
+        opt.value       = p.id;
+        opt.textContent = p.name;
+        sel.appendChild(opt);
+    });
+}
+
+// ============================================================
+// マルチキャラクター自動調整
+// ============================================================
+function getMultiCharInstruction() {
+    const mainName = document.getElementById('active-main-name')?.textContent?.trim();
+    const subName  = document.getElementById('active-sub-name')?.textContent?.trim();
+    if (!mainName || mainName === '未設定' || !subName || subName === '未設定') return '';
+    return `
+
+【マルチキャラクター自動調整 - 必須】
+このシーンには2人の人物が登場します:
+- メインキャラクター: ${mainName}
+- サブキャラクター: ${subName}
+
+以下のルールを厳守してください:
+1. subject.description に2人が共にいるシーンを1〜2文で必ず描写すること
+2. 2人の相対位置（並列・向き合い・背後・斜め後ろ等）を明確に記述すること
+3. 視線・体の向きが2人の間で自然に呼応するよう調整すること
+4. ポーズは互いを意識した非対称な構図にすること（完全な対称は避ける）
+5. grok_imagine_prompt には "Two characters:" から始まる2人構成の記述を含めること
+6. サブキャラはメインよりやや後ろ・横・小さい配置を推奨（主従・奥行きを表現）
+7. constraints.must_keep に "both characters fully visible in frame" を必ず含めること`;
 }
 
 function escapeHtml(str) {
