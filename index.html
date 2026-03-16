@@ -107,6 +107,27 @@
         /* タグチップ */
         .tag-chip { display:inline-flex; align-items:center; gap:3px; background:rgba(99,102,241,.2); border:1px solid rgba(99,102,241,.35); border-radius:20px; padding:1px 8px; font-size:10px; color:#a5b4fc; cursor:pointer; transition:all .15s; }
         .tag-chip:hover { background:rgba(99,102,241,.35); }
+
+        /* ===== 自動保存 ===== */
+        #draft-restore-bar { display:none; }
+        #draft-restore-bar.show { display:flex; }
+        #gen-timer-badge { transition: opacity .3s; }
+        #shortcut-modal { display:none; }
+        #shortcut-modal.show { display:flex; }
+        .shortcut-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(71,85,105,.3); }
+        .shortcut-row:last-child { border-bottom:none; }
+        kbd { display:inline-flex; align-items:center; background:#1e293b; border:1px solid #475569; border-radius:4px; padding:2px 7px; font-size:10px; color:#94a3b8; font-family:monospace; }
+        #stats-modal { display:none; }
+        #stats-modal.show { display:flex; }
+        .stats-card { background:rgba(30,41,59,.6); border:1px solid rgba(71,85,105,.4); border-radius:10px; padding:14px; }
+        .stats-num { font-size:28px; font-weight:700; color:#14b8a6; line-height:1; }
+        #quality-score-bar { transition: width .6s cubic-bezier(.4,0,.2,1); }
+        #quality-panel { display:none; }
+        #quality-panel.show { display:block; }
+        .color-swatch { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid transparent; transition:all .15s; flex-shrink:0; }
+        .color-swatch.active { border-color:#fff !important; transform:scale(1.2); }
+        #subject-detail-modal { display:none; }
+        #subject-detail-modal.show { display:flex; }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
@@ -358,6 +379,41 @@
         </div>
     </div>
 </header>
+
+<!-- ===== ショートカット一覧モーダル ===== -->
+<div id="shortcut-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="keyboard" class="w-4 h-4 text-grok-500"></i> キーボードショートカット
+            </h2>
+            <button id="close-shortcut-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-0">
+            <div class="shortcut-row"><span class="text-xs text-slate-300">プロンプト生成</span><kbd>Ctrl + Enter</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">バリエーション生成</span><kbd>Ctrl + Shift + V</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">Grok Imagine をコピー</span><kbd>Ctrl + Shift + C</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">バッチ生成</span><kbd>Ctrl + Shift + B</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">元に戻す</span><kbd>Ctrl + Z</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">やり直す</span><kbd>Ctrl + Y</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">モーダルを全部閉じる</span><kbd>Esc</kbd></div>
+            <div class="shortcut-row"><span class="text-xs text-slate-300">このパネルを開く</span><kbd>?</kbd></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 統計ダッシュボードモーダル ===== -->
+<div id="stats-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-grok-500"></i> 生成統計ダッシュボード
+            </h2>
+            <button id="close-stats-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="stats-content" class="p-5 overflow-y-auto flex-1 space-y-5"></div>
+    </div>
+</div>
 
 <!-- ===== カメラプリセット管理モーダル ===== -->
 <div id="camera-preset-modal" class="fixed inset-0 z-[100] items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -853,7 +909,43 @@
             </div>
             <div id="random-seed-display" class="hidden mt-2 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap"></div>
             <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
-        </div>
+            <div id="draft-restore-bar" class="mt-2 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 items-center gap-2">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400 flex-shrink-0"></i>
+                <span class="text-xs text-amber-300 flex-1">前回の下書きがあります</span>
+                <button id="restore-draft-btn" class="text-xs text-amber-400 hover:text-amber-300 font-medium transition-colors">復元</button>
+                <button id="dismiss-draft-btn" class="text-slate-500 hover:text-slate-300 transition-colors ml-1"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+            </div>
+            <div id="gen-timer-badge" class="hidden mt-1 flex items-center justify-end gap-1.5">
+                <i data-lucide="timer" class="w-3 h-3 text-slate-500"></i>
+                <span id="gen-timer-text" class="text-[10px] text-slate-500"></span>
+            </div>
+        
+            <!-- カラーパレット指定 + 被写体詳細 -->
+            <div class="bg-slate-800/40 border border-slate-700/50 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="palette" class="w-3.5 h-3.5 text-purple-400/70"></i>
+                    <span class="text-xs font-medium text-slate-400">カラーパレット</span>
+                    <button id="subject-detail-btn" class="ml-auto text-[10px] text-slate-500 hover:text-grok-400 transition-colors flex items-center gap-1">
+                        <i data-lucide="user-pen" class="w-3 h-3"></i> 被写体詳細エディター
+                    </button>
+                </div>
+                <div id="color-swatches" class="flex flex-wrap gap-2 mb-2"></div>
+                <div class="flex gap-2 items-center">
+                    <select id="color-tone-select"
+                        class="flex-1 bg-slate-700/60 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-grok-500">
+                        <option value="">トーン指定なし</option>
+                        <option value="warm">暖色系（ウォーム）</option>
+                        <option value="cool">寒色系（クール）</option>
+                        <option value="monochrome">モノクローム</option>
+                        <option value="pastel">パステル</option>
+                        <option value="vivid">ビビッド・鮮やか</option>
+                        <option value="dark">ダーク・深み</option>
+                        <option value="golden">ゴールデンアワー</option>
+                        <option value="neon">ネオン・サイバー</option>
+                    </select>
+                    <span id="selected-color-label" class="text-[10px] text-slate-500 whitespace-nowrap max-w-[80px] truncate"></span>
+                </div>
+            </div>
 
         <!-- 履歴パネル -->
         <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
@@ -861,9 +953,19 @@
                 <h3 class="font-medium text-slate-300 flex items-center gap-2 text-sm">
                     <i data-lucide="history" class="w-4 h-4"></i> 生成履歴
                 </h3>
-                <button id="clear-history-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors flex items-center gap-1">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 全削除
-                </button>
+                <div class="flex items-center gap-1">
+                    <button id="export-history-btn" title="履歴をエクスポート (JSON/CSV)"
+                        class="text-slate-500 hover:text-grok-400 transition-colors p-1 rounded hover:bg-slate-700/50">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button id="open-stats-btn" title="統計ダッシュボード"
+                        class="text-slate-500 hover:text-grok-400 transition-colors p-1 rounded hover:bg-slate-700/50">
+                        <i data-lucide="bar-chart-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button id="clear-history-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors flex items-center gap-1 ml-1">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
             </div>
             <div class="px-3 pt-2 pb-1.5 border-b border-slate-700/40 space-y-1.5">
                 <div class="relative">
@@ -1029,6 +1131,10 @@ const PRESET_KEY         = 'grok_gen_preset';
         const SNAPSHOT_KEY       = 'grok_gen_snapshots';
         const NEG_PROMPT_KEY     = 'grok_gen_neg_prompts';
         const HIST_TAGS_KEY      = 'grok_gen_hist_tags';
+        const DRAFT_KEY          = 'grok_gen_draft';
+        const STATS_KEY          = 'grok_gen_stats';
+        const COLOR_PALETTE_KEY  = 'grok_gen_color_palette';
+        const SUBJECT_DETAIL_KEY = 'grok_gen_subject_detail';
 const MODEL_KEY          = 'grok_gen_model';
         const ASPECT_KEY         = 'grok_gen_aspect';
 const MAX_REQUESTS       = 5;
@@ -1774,6 +1880,13 @@ function init() {
     initBatchGenerate();
     initCompare();
     initQR();
+    initDraftAutosave();
+    initShortcuts();
+    initStats();
+    initExportHistory();
+    initColorPalette();
+    initSubjectDetail();
+    initQualityScore();
 }
 
 // ===================== プリセット =====================
@@ -2781,6 +2894,8 @@ function getCameraInstruction() {
                     + getCameraInstruction()
                     + getMultiCharInstruction()
                     + getNegPromptInstruction()
+                    + getColorPaletteInstruction()
+                    + getSubjectDetailInstruction()
                     + getActiveSubjectInstruction()
                     + randomInstruction;
                 const responseData = await fetchWithKeyRotation(userPrompt, systemInstruction);
@@ -3016,12 +3131,15 @@ async function handleGenerate() {
     els.statusArea.classList.add('hidden');
     els.errorMessage.classList.add('hidden');
     els.retryMessage.classList.add('hidden');
+    const _genStart = Date.now();
 
     try {
         const responseData = await fetchWithKeyRotation(promptText);
         const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!responseText) throw new Error('AIから有効な応答がありませんでした。');
         parseAndDisplayResult(responseText, promptText);
+        showGenTimer(Date.now() - _genStart);
+        recordStats(currentPreset);
     } catch (error) {
         showError(error.message);
     } finally {
@@ -3071,6 +3189,8 @@ function parseAndDisplayResult(responseText, promptText) {
         pushUndoStack({ ...outputData }, promptText);
         showVariationRow(true);
         updateCharCount();
+        showQualityScore({ ...outputData });
+        clearDraft();
 
     } catch (error) {
         console.error('Parse Error:', error, responseText);
@@ -4096,6 +4216,508 @@ function doCompare() {
     result.classList.remove('hidden');
 }
 
+
+// ============================================================
+// 自動保存 / 下書き機能
+// ============================================================
+let _draftTimer = null;
+
+function initDraftAutosave() {
+    if (!els.promptInput) return;
+    const saved = localStorage.getItem(DRAFT_KEY);
+    if (saved && saved.trim()) {
+        const bar = document.getElementById('draft-restore-bar');
+        if (bar) bar.classList.add('show');
+    }
+    els.promptInput.addEventListener('input', () => {
+        clearTimeout(_draftTimer);
+        _draftTimer = setTimeout(() => {
+            const val = els.promptInput.value.trim();
+            if (val) localStorage.setItem(DRAFT_KEY, val);
+        }, 2000);
+    });
+    const restoreBtn  = document.getElementById('restore-draft-btn');
+    const dismissBtn  = document.getElementById('dismiss-draft-btn');
+    const bar         = document.getElementById('draft-restore-bar');
+    if (restoreBtn) restoreBtn.addEventListener('click', () => {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved && els.promptInput) { els.promptInput.value = saved; bar?.classList.remove('show'); }
+    });
+    if (dismissBtn) dismissBtn.addEventListener('click', () => {
+        localStorage.removeItem(DRAFT_KEY);
+        bar?.classList.remove('show');
+    });
+}
+
+function clearDraft() {
+    localStorage.removeItem(DRAFT_KEY);
+    document.getElementById('draft-restore-bar')?.classList.remove('show');
+}
+
+// ============================================================
+// 生成時間計測
+// ============================================================
+function showGenTimer(ms) {
+    const badge = document.getElementById('gen-timer-badge');
+    const text  = document.getElementById('gen-timer-text');
+    if (!badge || !text) return;
+    const sec = (ms / 1000).toFixed(1);
+    text.textContent = `${sec}秒で生成完了`;
+    badge.classList.remove('hidden');
+    clearTimeout(badge._hideTimer);
+    badge._hideTimer = setTimeout(() => badge.classList.add('hidden'), 6000);
+}
+
+// ============================================================
+// キーボードショートカット
+// ============================================================
+function initShortcuts() {
+    const modal    = document.getElementById('shortcut-modal');
+    const closeBtn = document.getElementById('close-shortcut-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+
+    document.addEventListener('keydown', e => {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        const isInput = tag === 'input' || tag === 'textarea' || tag === 'select';
+
+        // Escape: 全モーダル閉じる
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.show[id$="-modal"], .show[id="quality-panel"]').forEach(el => el.classList.remove('show'));
+            return;
+        }
+        // ? : ショートカット一覧
+        if (e.key === '?' && !isInput) {
+            modal?.classList.add('show'); lucide.createIcons(); return;
+        }
+        // Ctrl+Enter: 生成
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            const btn = document.getElementById('generate-btn');
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+        // Ctrl+Shift+V: バリエーション
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+            e.preventDefault();
+            const btn = document.getElementById('variation-btn');
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+        // Ctrl+Shift+C: Grok Imagine コピー
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            const txt = document.getElementById('grok-imagine-output')?.textContent;
+            if (txt) { navigator.clipboard.writeText(txt).catch(() => {}); }
+            return;
+        }
+        // Ctrl+Shift+B: バッチ生成
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'B') {
+            e.preventDefault();
+            const btn = document.getElementById('batch-btn');
+            if (btn && !btn.disabled) btn.click();
+            return;
+        }
+    });
+}
+
+// ============================================================
+// 生成統計
+// ============================================================
+function getStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY) || '{}'); } catch { return {}; } }
+function saveStats(s) { try { localStorage.setItem(STATS_KEY, JSON.stringify(s)); } catch(e) {} }
+
+function recordStats(preset) {
+    const s = getStats();
+    s.total = (s.total || 0) + 1;
+    s.presets = s.presets || {};
+    s.presets[preset] = (s.presets[preset] || 0) + 1;
+    const today = new Date().toISOString().slice(0, 10);
+    s.daily = s.daily || {};
+    s.daily[today] = (s.daily[today] || 0) + 1;
+    const hour = new Date().getHours();
+    s.hours = s.hours || {};
+    s.hours[hour] = (s.hours[hour] || 0) + 1;
+    saveStats(s);
+}
+
+function initStats() {
+    const openBtn  = document.getElementById('open-stats-btn');
+    const closeBtn = document.getElementById('close-stats-btn');
+    const modal    = document.getElementById('stats-modal');
+    if (openBtn)  openBtn.addEventListener('click',  () => { renderStats(); modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+}
+
+function renderStats() {
+    const content = document.getElementById('stats-content');
+    if (!content) return;
+    const s = getStats();
+    const history = getHistory();
+    const total = s.total || 0;
+
+    // 今週
+    const now = new Date();
+    const weekAgo = new Date(now - 7 * 86400000);
+    const weekCount = Object.entries(s.daily || {}).filter(([d]) => new Date(d) >= weekAgo).reduce((a, [, v]) => a + v, 0);
+    const todayKey = now.toISOString().slice(0, 10);
+    const todayCount = (s.daily || {})[todayKey] || 0;
+
+    // プリセット分布バー
+    const presets = s.presets || {};
+    const presetMax = Math.max(...Object.values(presets), 1);
+    const presetBars = Object.entries(presets).sort((a,b) => b[1]-a[1]).slice(0,8).map(([k, v]) => {
+        const pct = Math.round((v / presetMax) * 100);
+        const label = PRESETS[k]?.label || k;
+        return `<div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-400 w-20 truncate">${escapeHtml(label)}</span>
+            <div class="flex-1 h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div class="usage-bar h-full bg-grok-600 rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="text-[10px] text-slate-500 w-6 text-right">${v}</span>
+        </div>`;
+    }).join('');
+
+    // 時間帯バー
+    const hours = s.hours || {};
+    const hourMax = Math.max(...Object.values(hours), 1);
+    const hourBars = Array.from({length: 24}, (_, i) => {
+        const v = hours[i] || 0;
+        const pct = Math.round((v / hourMax) * 100);
+        return `<div class="flex flex-col items-center gap-0.5" title="${i}時: ${v}件">
+            <div class="w-3 bg-slate-800 rounded-sm overflow-hidden" style="height:32px">
+                <div class="usage-bar w-full bg-grok-700/80 rounded-sm" style="height:${pct}%; margin-top:${100-pct}%"></div>
+            </div>
+            <span class="text-[8px] text-slate-600">${i%6===0?i:''}</span>
+        </div>`;
+    }).join('');
+
+    // APIキー使用状況
+    const keys = getApiKeys();
+    const keyBars = keys.map((k, i) => {
+        const used = getKeyRateLimitCount(i);
+        const pct  = Math.round((used / MAX_REQUESTS) * 100);
+        const color = pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-500' : 'bg-grok-500';
+        return `<div class="flex items-center gap-2">
+            <span class="text-[10px] text-slate-400 w-20 truncate">${escapeHtml(k.name || `キー${i+1}`)}</span>
+            <div class="flex-1 h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div class="usage-bar h-full ${color} rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="text-[10px] text-slate-500 w-12 text-right">${used}/${MAX_REQUESTS}</span>
+        </div>`;
+    }).join('') || '<p class="text-xs text-slate-500">APIキーが登録されていません</p>';
+
+    content.innerHTML = `
+        <div class="grid grid-cols-3 gap-3">
+            <div class="stats-card text-center"><div class="stats-num">${total}</div><p class="text-[10px] text-slate-500 mt-1">総生成回数</p></div>
+            <div class="stats-card text-center"><div class="stats-num">${weekCount}</div><p class="text-[10px] text-slate-500 mt-1">今週の生成数</p></div>
+            <div class="stats-card text-center"><div class="stats-num">${todayCount}</div><p class="text-[10px] text-slate-500 mt-1">今日の生成数</p></div>
+        </div>
+        <div class="stats-card">
+            <p class="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5"><i data-lucide="layers" class="w-3.5 h-3.5 text-grok-400"></i> スタイル別生成回数</p>
+            <div class="space-y-2">${presetBars || '<p class="text-xs text-slate-500">データなし</p>'}</div>
+        </div>
+        <div class="stats-card">
+            <p class="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5"><i data-lucide="clock" class="w-3.5 h-3.5 text-grok-400"></i> 時間帯別生成頻度</p>
+            <div class="flex items-end gap-1">${hourBars}</div>
+        </div>
+        <div class="stats-card">
+            <p class="text-xs font-semibold text-slate-300 mb-3 flex items-center gap-1.5"><i data-lucide="key" class="w-3.5 h-3.5 text-grok-400"></i> APIキー使用量</p>
+            <div class="space-y-2">${keyBars}</div>
+        </div>`;
+    lucide.createIcons();
+}
+
+// ============================================================
+// 履歴エクスポート
+// ============================================================
+function initExportHistory() {
+    const btn = document.getElementById('export-history-btn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const history = getHistory();
+        if (history.length === 0) { showError('エクスポートする履歴がありません。'); return; }
+        // メニューを動的生成
+        const existing = document.getElementById('export-menu');
+        if (existing) { existing.remove(); return; }
+        const menu = document.createElement('div');
+        menu.id = 'export-menu';
+        menu.className = 'absolute z-[300] bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-1 min-w-[130px]';
+        menu.style.cssText = 'top: calc(100% + 4px); right: 0;';
+        menu.innerHTML = `
+            <button onclick="doExportHistory('json')" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700 rounded flex items-center gap-2">
+                <i data-lucide="file-code" class="w-3.5 h-3.5 text-grok-400"></i> JSON（完全データ）
+            </button>
+            <button onclick="doExportHistory('csv')" class="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700 rounded flex items-center gap-2">
+                <i data-lucide="table" class="w-3.5 h-3.5 text-amber-400"></i> CSV（一覧表）
+            </button>`;
+        btn.style.position = 'relative';
+        btn.appendChild(menu);
+        lucide.createIcons();
+        setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 100);
+    });
+}
+
+function doExportHistory(format) {
+    const history = getHistory();
+    const ts = new Date().toISOString().slice(0, 10);
+    if (format === 'json') {
+        const blob = new Blob([JSON.stringify(history, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, `grok_history_${ts}.json`);
+    } else {
+        const rows = [['日時', 'プロンプト', 'スタイル', 'モデル', 'Grok Imagineプロンプト']];
+        history.forEach(e => {
+            rows.push([
+                new Date(e.timestamp).toLocaleString('ja-JP'),
+                (e.prompt || '').replace(/,/g, '，'),
+                e.preset || '',
+                e.model || '',
+                (e.outputData?.imagine || '').replace(/,/g, '，').replace(/\n/g, ' ')
+            ]);
+        });
+        const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        downloadBlob(blob, `grok_history_${ts}.csv`);
+    }
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ============================================================
+// カラーパレット指定
+// ============================================================
+const COLOR_SWATCHES_DEF = [
+    { label: 'ローズ',      hex: '#f43f5e' },
+    { label: 'オレンジ',    hex: '#f97316' },
+    { label: 'アンバー',    hex: '#f59e0b' },
+    { label: 'ライム',      hex: '#84cc16' },
+    { label: 'ティール',    hex: '#14b8a6' },
+    { label: 'スカイ',      hex: '#38bdf8' },
+    { label: 'バイオレット', hex: '#8b5cf6' },
+    { label: 'ホワイト',    hex: '#f8fafc' },
+    { label: 'ブラック',    hex: '#0f172a' },
+    { label: 'ゴールド',    hex: '#fbbf24' },
+];
+
+let selectedColors = [];
+let selectedTone   = '';
+
+function initColorPalette() {
+    const container = document.getElementById('color-swatches');
+    const toneSelect= document.getElementById('color-tone-select');
+    if (!container) return;
+    COLOR_SWATCHES_DEF.forEach(c => {
+        const sw = document.createElement('button');
+        sw.className = 'color-swatch';
+        sw.title = c.label;
+        sw.style.background = c.hex;
+        sw.dataset.hex   = c.hex;
+        sw.dataset.label = c.label;
+        sw.addEventListener('click', () => {
+            const idx = selectedColors.indexOf(c.hex);
+            if (idx === -1) { if (selectedColors.length < 3) selectedColors.push(c.hex); }
+            else selectedColors.splice(idx, 1);
+            updateColorSwatchUI();
+        });
+        container.appendChild(sw);
+    });
+    if (toneSelect) {
+        toneSelect.addEventListener('change', () => {
+            selectedTone = toneSelect.value;
+            updateColorLabelUI();
+        });
+    }
+    // 保存値復元
+    try {
+        const saved = JSON.parse(localStorage.getItem(COLOR_PALETTE_KEY) || '{}');
+        if (saved.colors) selectedColors = saved.colors;
+        if (saved.tone && toneSelect) { toneSelect.value = saved.tone; selectedTone = saved.tone; }
+        updateColorSwatchUI();
+    } catch(e) {}
+}
+
+function updateColorSwatchUI() {
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+        sw.classList.toggle('active', selectedColors.includes(sw.dataset.hex));
+    });
+    updateColorLabelUI();
+    try { localStorage.setItem(COLOR_PALETTE_KEY, JSON.stringify({ colors: selectedColors, tone: selectedTone })); } catch(e) {}
+}
+
+function updateColorLabelUI() {
+    const el = document.getElementById('selected-color-label');
+    if (!el) return;
+    const labels = selectedColors.map(hex => COLOR_SWATCHES_DEF.find(c => c.hex === hex)?.label || hex);
+    el.textContent = labels.join(' · ') || '';
+}
+
+function getColorPaletteInstruction() {
+    const parts = [];
+    if (selectedColors.length > 0) {
+        const names = selectedColors.map(hex => COLOR_SWATCHES_DEF.find(c => c.hex === hex)?.label || hex);
+        parts.push(`支配色: ${names.join('、')}`);
+    }
+    if (selectedTone) {
+        const toneMap = { warm:'暖色系（ウォームトーン）', cool:'寒色系（クールトーン）', monochrome:'モノクローム', pastel:'パステルトーン', vivid:'ビビッド・高彩度', dark:'ダーク・低明度', golden:'ゴールデンアワー（黄金色の光）', neon:'ネオン・サイバーパンク' };
+        parts.push(`カラートーン: ${toneMap[selectedTone] || selectedTone}`);
+    }
+    if (parts.length === 0) return '';
+    return `\n\n【カラーパレット指定 - 必須】\n${parts.join('\n')}\nこれらの色調・トーンを画像全体の配色に反映させること。color_paletteフィールドに指定色を含めること。`;
+}
+
+// ============================================================
+// 被写体詳細エディター
+// ============================================================
+let subjectDetail = {};
+
+function initSubjectDetail() {
+    const openBtn  = document.getElementById('subject-detail-btn');
+    const closeBtn = document.getElementById('close-subject-detail-btn');
+    const applyBtn = document.getElementById('apply-subject-detail-btn');
+    const clearBtn = document.getElementById('clear-subject-detail-btn');
+    const modal    = document.getElementById('subject-detail-modal');
+
+    if (openBtn)  openBtn.addEventListener('click',  () => { loadSubjectDetailFields(); modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (applyBtn) applyBtn.addEventListener('click', () => {
+        subjectDetail = {
+            outfit:     document.getElementById('sd-outfit')?.value.trim() || '',
+            expression: document.getElementById('sd-expression')?.value.trim() || '',
+            pose:       document.getElementById('sd-pose')?.value.trim() || '',
+            hair:       document.getElementById('sd-hair')?.value.trim() || '',
+            accessory:  document.getElementById('sd-accessory')?.value.trim() || '',
+            extra:      document.getElementById('sd-extra')?.value.trim() || '',
+        };
+        try { localStorage.setItem(SUBJECT_DETAIL_KEY, JSON.stringify(subjectDetail)); } catch(e) {}
+        modal?.classList.remove('show');
+        updateSubjectDetailBadge();
+    });
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+        ['sd-outfit','sd-expression','sd-pose','sd-hair','sd-accessory','sd-extra'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    });
+    // 保存値復元
+    try {
+        const saved = JSON.parse(localStorage.getItem(SUBJECT_DETAIL_KEY) || '{}');
+        if (Object.keys(saved).length) { subjectDetail = saved; updateSubjectDetailBadge(); }
+    } catch(e) {}
+}
+
+function loadSubjectDetailFields() {
+    ['outfit','expression','pose','hair','accessory','extra'].forEach(key => {
+        const el = document.getElementById(`sd-${key}`);
+        if (el) el.value = subjectDetail[key] || '';
+    });
+}
+
+function updateSubjectDetailBadge() {
+    const btn = document.getElementById('subject-detail-btn');
+    if (!btn) return;
+    const hasDetail = Object.values(subjectDetail).some(v => v);
+    btn.classList.toggle('text-grok-400', hasDetail);
+    btn.classList.toggle('text-slate-500', !hasDetail);
+    if (hasDetail) btn.title = '被写体詳細：設定あり';
+}
+
+function getSubjectDetailInstruction() {
+    const fields = Object.values(subjectDetail).filter(v => v);
+    if (fields.length === 0) return '';
+    const parts = [];
+    if (subjectDetail.outfit)     parts.push(`服装: ${subjectDetail.outfit}`);
+    if (subjectDetail.expression) parts.push(`表情: ${subjectDetail.expression}`);
+    if (subjectDetail.pose)       parts.push(`ポーズ: ${subjectDetail.pose}`);
+    if (subjectDetail.hair)       parts.push(`髪型: ${subjectDetail.hair}`);
+    if (subjectDetail.accessory)  parts.push(`アクセサリー: ${subjectDetail.accessory}`);
+    if (subjectDetail.extra)      parts.push(`追加特徴: ${subjectDetail.extra}`);
+    return `\n\n【被写体詳細指定 - 優先適用】\n以下の被写体の詳細設定をプリセットより優先して反映すること:\n${parts.join('\n')}`;
+}
+
+// ============================================================
+// プロンプト品質スコア
+// ============================================================
+function initQualityScore() {
+    const closeBtn = document.getElementById('close-quality-btn');
+    if (closeBtn) closeBtn.addEventListener('click', () => document.getElementById('quality-panel')?.classList.remove('show'));
+}
+
+function calcQualityScore(data) {
+    if (!data?.json) return null;
+    const j = data.json;
+    let score = 0;
+    const details = [];
+
+    // 被写体の詳細度 (0-25)
+    const subjDesc = j.subject?.description || '';
+    const subjScore = Math.min(25, Math.floor(subjDesc.length / 8));
+    score += subjScore;
+    details.push({ label: '被写体の詳細度', score: subjScore, max: 25, ok: subjScore >= 18 });
+
+    // カメラ設定の具体性 (0-20)
+    const cam = j.camera || {};
+    const camFields = [cam.style, cam.angle, cam.shot_type, cam.lighting, cam.depth_of_field].filter(v => v && v !== 'none' && v !== '');
+    const camScore = Math.min(20, camFields.length * 4);
+    score += camScore;
+    details.push({ label: 'カメラ設定', score: camScore, max: 20, ok: camScore >= 16 });
+
+    // ネガティブプロンプト充実度 (0-15)
+    const negLen = (j.negative_prompt || []).length;
+    const negScore = Math.min(15, negLen * 2);
+    score += negScore;
+    details.push({ label: 'ネガティブプロンプト', score: negScore, max: 15, ok: negScore >= 10 });
+
+    // Grok Imagineプロンプト長さ (0-20)
+    const imagineLen = (data.imagine || '').length;
+    const imgScore = imagineLen > 800 ? 20 : imagineLen > 400 ? 15 : imagineLen > 100 ? 8 : 0;
+    score += imgScore;
+    details.push({ label: 'Grok Imagineプロンプト', score: imgScore, max: 20, ok: imgScore >= 15 });
+
+    // 構図・スタイル情報 (0-20)
+    const hasComposition = !!(j.composition || j.style || j.mood);
+    const styleScore = hasComposition ? 20 : 0;
+    score += styleScore;
+    details.push({ label: '構図・スタイル情報', score: styleScore, max: 20, ok: styleScore >= 15 });
+
+    return { score: Math.min(100, score), details };
+}
+
+function showQualityScore(data) {
+    const result = calcQualityScore(data);
+    if (!result) return;
+    const panel  = document.getElementById('quality-panel');
+    const numEl  = document.getElementById('quality-score-num');
+    const barEl  = document.getElementById('quality-score-bar');
+    const detailEl = document.getElementById('quality-details');
+    if (!panel) return;
+
+    if (numEl) numEl.textContent = result.score;
+    if (barEl) {
+        barEl.style.width = result.score + '%';
+        barEl.className = `h-full rounded-full ${result.score >= 75 ? 'bg-grok-500' : result.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`;
+    }
+    if (detailEl) {
+        detailEl.innerHTML = result.details.map(d => `
+            <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                    <span>${d.ok ? '✅' : '⚠️'}</span> ${escapeHtml(d.label)}
+                </span>
+                <span class="text-[10px] font-medium ${d.ok ? 'text-grok-400' : 'text-amber-400'}">${d.score}/${d.max}</span>
+            </div>`).join('');
+    }
+    panel.classList.add('show');
+    lucide.createIcons();
+}
+
 function escapeHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -4190,6 +4812,62 @@ document.addEventListener('DOMContentLoaded', init);
         </div>
     </div>
 </div>
+
+<!-- ===== プロンプト品質スコアパネル ===== -->
+<div id="quality-panel" class="fixed bottom-4 right-4 z-[150] bg-slate-900 border border-slate-700 rounded-2xl p-4 w-72 shadow-2xl">
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400"></i> プロンプト品質スコア
+        </span>
+        <button id="close-quality-btn" class="text-slate-500 hover:text-slate-300 text-lg leading-none">&times;</button>
+    </div>
+    <div class="flex items-end gap-3 mb-3">
+        <span id="quality-score-num" class="text-4xl font-bold text-grok-400">–</span>
+        <span class="text-slate-500 text-sm mb-1">/ 100</span>
+    </div>
+    <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-3">
+        <div id="quality-score-bar" class="h-full bg-grok-500 rounded-full" style="width:0%"></div>
+    </div>
+    <div id="quality-details" class="space-y-1.5 text-xs"></div>
+</div>
+
+<!-- ===== 被写体詳細エディターモーダル ===== -->
+<div id="subject-detail-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="user-pen" class="w-4 h-4 text-grok-500"></i> 被写体詳細エディター
+            </h2>
+            <button id="close-subject-detail-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-3">
+            <p class="text-xs text-slate-500">空欄の項目はプリセット値を使用します。生成時に自動で指示に追加されます。</p>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="text-xs text-slate-400 mb-1 block">服装・衣装</label>
+                    <input id="sd-outfit" type="text" placeholder="例: school uniform"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+                <div><label class="text-xs text-slate-400 mb-1 block">表情</label>
+                    <input id="sd-expression" type="text" placeholder="例: gentle smile"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+                <div><label class="text-xs text-slate-400 mb-1 block">ポーズ</label>
+                    <input id="sd-pose" type="text" placeholder="例: sitting, arms crossed"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+                <div><label class="text-xs text-slate-400 mb-1 block">髪型</label>
+                    <input id="sd-hair" type="text" placeholder="例: long wavy hair"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+                <div><label class="text-xs text-slate-400 mb-1 block">アクセサリー</label>
+                    <input id="sd-accessory" type="text" placeholder="例: glasses, ribbon"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+                <div><label class="text-xs text-slate-400 mb-1 block">追加特徴</label>
+                    <input id="sd-extra" type="text" placeholder="例: freckles, cat ears"
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500"></div>
+            </div>
+            <div class="flex gap-2 pt-1">
+                <button id="apply-subject-detail-btn" class="flex-1 bg-grok-600 hover:bg-grok-500 text-white py-2 rounded-lg text-xs font-medium transition-colors">適用して閉じる</button>
+                <button id="clear-subject-detail-btn" class="px-4 py-2 border border-slate-700 hover:border-slate-600 text-slate-400 hover:text-slate-300 rounded-lg text-xs transition-colors">クリア</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
-
