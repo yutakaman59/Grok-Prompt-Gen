@@ -76,6 +76,37 @@
             padding:2px 8px; font-size:10px; color:#c4b5fd;
             display:inline-flex; align-items:center; gap:4px;
         }
+
+        /* ===== Undo/Redo / バリエーション ===== */
+        #undo-btn:disabled, #redo-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #variation-btn { background: linear-gradient(135deg, rgba(139,92,246,.25), rgba(20,184,166,.2)); border: 1px solid rgba(139,92,246,.4); }
+        #variation-btn:hover:not(:disabled) { background: linear-gradient(135deg, rgba(139,92,246,.4), rgba(20,184,166,.35)); }
+        #variation-btn:disabled { opacity:0.35; cursor:not-allowed; }
+        /* ===== ネガティブプロンプトチップ ===== */
+        .neg-chip { display:inline-flex; align-items:center; gap:4px; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.3); border-radius:20px; padding:2px 10px 2px 8px; font-size:11px; color:#fca5a5; }
+        .neg-chip button { line-height:1; color:#f87171; background:none; border:none; cursor:pointer; padding:0; font-size:14px; }
+        .neg-chip button:hover { color:#ef4444; }
+        /* ===== バッチ生成タブ ===== */
+        .batch-tab { transition:all .15s; cursor:pointer; padding:4px 12px; border-radius:6px; font-size:11px; color:#94a3b8; background:none; border:1px solid transparent; }
+        .batch-tab.active { background:rgba(20,184,166,.15); border-color:rgba(20,184,166,.4); color:#14b8a6; }
+        .batch-tab:hover:not(.active) { background:rgba(71,85,105,.4); color:#cbd5e1; }
+        /* ===== 各種モーダル ===== */
+        #compare-modal, #qr-modal, #snapshot-modal, #template-modal { display:none; }
+        #compare-modal.show, #qr-modal.show, #snapshot-modal.show, #template-modal.show { display:flex; }
+        /* 比較ビュー */
+        .compare-select-card { cursor:pointer; transition:all .15s; }
+        .compare-select-card:hover { border-color:#14b8a6 !important; }
+        .compare-select-card.selected { border-color:#14b8a6 !important; background:rgba(20,184,166,.08) !important; }
+        /* スナップショット・テンプレートカード */
+        .snapshot-card, .template-card { transition:all .15s; cursor:pointer; }
+        .snapshot-card:hover, .template-card:hover { border-color:#14b8a6 !important; background:rgba(20,184,166,.07) !important; }
+        /* 文字数カウンター */
+        .char-bar-ok   { background:#14b8a6; }
+        .char-bar-warn { background:#f59e0b; }
+        .char-bar-over { background:#ef4444; }
+        /* タグチップ */
+        .tag-chip { display:inline-flex; align-items:center; gap:3px; background:rgba(99,102,241,.2); border:1px solid rgba(99,102,241,.35); border-radius:20px; padding:1px 8px; font-size:10px; color:#a5b4fc; cursor:pointer; transition:all .15s; }
+        .tag-chip:hover { background:rgba(99,102,241,.35); }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
@@ -761,6 +792,65 @@
                     <i data-lucide="shuffle" class="w-4 h-4"></i><span class="text-sm">ランダム</span>
                 </button>
             </div>
+            <!-- バリエーション生成 -->
+            <div id="variation-row" class="mt-2 hidden">
+                <button id="variation-btn" disabled
+                    class="w-full text-purple-300 py-2 px-4 rounded-lg font-medium transition-all flex items-center justify-center gap-2 text-sm">
+                    <i data-lucide="git-branch" class="w-4 h-4"></i>
+                    <span>バリエーション生成（前回結果ベース）</span>
+                </button>
+            </div>
+            <!-- Undo / Redo / テンプレ -->
+            <div class="mt-2 flex items-center gap-1.5 flex-wrap">
+                <button id="undo-btn" disabled title="元に戻す (Ctrl+Z)"
+                    class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-slate-700 hover:border-slate-600 transition-colors">
+                    <i data-lucide="undo-2" class="w-3 h-3"></i> Undo
+                </button>
+                <button id="redo-btn" disabled title="やり直す (Ctrl+Y)"
+                    class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded border border-slate-700 hover:border-slate-600 transition-colors">
+                    <i data-lucide="redo-2" class="w-3 h-3"></i> Redo
+                </button>
+                <span id="undo-label" class="text-[10px] text-slate-600"></span>
+                <div class="ml-auto flex items-center gap-1.5">
+                    <button id="open-snapshot-btn" title="設定スナップショット"
+                        class="flex items-center gap-1 text-xs text-slate-500 hover:text-indigo-400 px-2 py-1 rounded border border-slate-700 hover:border-indigo-500/40 transition-colors">
+                        <i data-lucide="camera" class="w-3 h-3"></i> スナップ
+                    </button>
+                    <button id="save-template-btn" title="入力内容をテンプレートとして保存"
+                        class="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 px-2 py-1 rounded border border-slate-700 hover:border-amber-500/40 transition-colors">
+                        <i data-lucide="bookmark-plus" class="w-3 h-3"></i> テンプレ保存
+                    </button>
+                    <button id="open-template-btn" title="テンプレート一覧"
+                        class="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-400 px-2 py-1 rounded border border-slate-700 hover:border-amber-500/40 transition-colors">
+                        <i data-lucide="library" class="w-3 h-3"></i> 呼び出し
+                    </button>
+                </div>
+            </div>
+            <!-- ネガティブプロンプトUI -->
+            <div class="mt-2 bg-slate-800/40 border border-red-500/20 rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-1.5">
+                    <i data-lucide="ban" class="w-3.5 h-3.5 text-red-400/70"></i>
+                    <span class="text-xs font-medium text-red-400/80">追加ネガティブプロンプト</span>
+                    <button id="neg-presets-toggle" class="ml-auto text-[10px] text-slate-500 hover:text-slate-300 transition-colors">よく使う ▾</button>
+                </div>
+                <div id="neg-chips" class="flex flex-wrap gap-1.5 mb-2 min-h-[20px]"></div>
+                <div id="neg-presets-panel" class="hidden flex flex-wrap gap-1.5 mb-2">
+                    <button class="neg-preset-chip tag-chip" data-val="watermark">watermark</button>
+                    <button class="neg-preset-chip tag-chip" data-val="text overlay">text overlay</button>
+                    <button class="neg-preset-chip tag-chip" data-val="logo">logo</button>
+                    <button class="neg-preset-chip tag-chip" data-val="cropped head">cropped head</button>
+                    <button class="neg-preset-chip tag-chip" data-val="extra fingers">extra fingers</button>
+                    <button class="neg-preset-chip tag-chip" data-val="deformed hands">deformed hands</button>
+                    <button class="neg-preset-chip tag-chip" data-val="multiple people">multiple people</button>
+                    <button class="neg-preset-chip tag-chip" data-val="username">username</button>
+                    <button class="neg-preset-chip tag-chip" data-val="frame border">frame border</button>
+                </div>
+                <div class="flex gap-2">
+                    <input id="neg-input" type="text" placeholder="追加するNG要素（例: watermark）"
+                        class="flex-1 bg-slate-700/60 border border-red-500/20 rounded px-2.5 py-1.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:border-red-400/50">
+                    <button id="neg-add-btn" class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded text-xs font-medium transition-colors">追加</button>
+                </div>
+            </div>
             <div id="random-seed-display" class="hidden mt-2 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap"></div>
             <p id="api-warning-text" class="text-xs text-amber-400/80 mt-2 text-center">※APIキーを設定してください</p>
         </div>
@@ -812,6 +902,12 @@
     <!-- 右カラム -->
     <div class="lg:col-span-8 flex flex-col gap-6">
 
+        <!-- バッチ生成タブ -->
+        <div id="batch-tabs-row" class="hidden flex items-center gap-2 flex-wrap">
+            <span class="text-xs text-slate-500 mr-1">バッチ結果:</span>
+            <div id="batch-tabs" class="flex gap-1 flex-wrap"></div>
+        </div>
+
         <!-- 解説ブロック -->
         <div id="explanation-container" class="bg-slate-800/50 border border-slate-700 rounded-xl p-5 shadow-sm hidden opacity-0 transition-opacity duration-500">
             <h2 class="text-sm font-medium text-slate-400 mb-2 flex items-center gap-2">
@@ -829,13 +925,34 @@
                         <span class="text-xs font-semibold text-grok-300">Grok Imagine 専用プロンプト</span>
                         <span class="text-[10px] bg-grok-600/40 text-grok-300 border border-grok-500/40 rounded-full px-2 py-0.5">最適化済み</span>
                     </div>
-                    <button id="copy-imagine-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
-                        <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-imagine-icon"></i>
-                        <span id="copy-imagine-text" class="hidden sm:inline">コピー</span>
-                    </button>
+                    <div class="flex items-center gap-1">
+                        <button id="share-imagine-btn" title="Web Share"
+                            class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2 py-1.5 rounded transition-colors text-xs">
+                            <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="qr-btn" title="QRコード"
+                            class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2 py-1.5 rounded transition-colors text-xs">
+                            <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="compare-btn" title="比較ビュー（2件選択）"
+                            class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2 py-1.5 rounded transition-colors text-xs">
+                            <i data-lucide="split" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button id="copy-imagine-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                            <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-imagine-icon"></i>
+                            <span id="copy-imagine-text" class="hidden sm:inline">コピー</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="p-4 overflow-auto max-h-[220px]">
                     <p id="grok-imagine-output" class="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap"></p>
+                </div>
+                <div class="px-4 pb-2.5 flex items-center gap-3">
+                    <div class="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div id="char-bar" class="h-full rounded-full transition-all duration-300 char-bar-ok" style="width:0%"></div>
+                    </div>
+                    <span id="char-count" class="text-[10px] text-slate-500 whitespace-nowrap">0 文字</span>
+                    <span id="char-status" class="text-[10px] whitespace-nowrap text-slate-500"></span>
                 </div>
             </div>
 
@@ -908,6 +1025,10 @@ const HISTORY_KEY        = 'grok_gen_history';
 const PRESET_KEY         = 'grok_gen_preset';
         const CAMERA_PRESET_KEY  = 'grok_gen_camera_presets';
         const FAVORITES_KEY      = 'grok_gen_favorites';
+        const TEMPLATE_KEY       = 'grok_gen_templates';
+        const SNAPSHOT_KEY       = 'grok_gen_snapshots';
+        const NEG_PROMPT_KEY     = 'grok_gen_neg_prompts';
+        const HIST_TAGS_KEY      = 'grok_gen_hist_tags';
 const MODEL_KEY          = 'grok_gen_model';
         const ASPECT_KEY         = 'grok_gen_aspect';
 const MAX_REQUESTS       = 5;
@@ -1645,6 +1766,14 @@ function init() {
     initSubjectPresets();
     initHistorySearchFilter();
     initCameraPresets();
+    initNegPrompts();
+    initUndoRedo();
+    initVariation();
+    initTemplates();
+    initSnapshots();
+    initBatchGenerate();
+    initCompare();
+    initQR();
 }
 
 // ===================== プリセット =====================
@@ -2651,6 +2780,7 @@ function getCameraInstruction() {
                     + getAspectInstruction()
                     + getCameraInstruction()
                     + getMultiCharInstruction()
+                    + getNegPromptInstruction()
                     + getActiveSubjectInstruction()
                     + randomInstruction;
                 const responseData = await fetchWithKeyRotation(userPrompt, systemInstruction);
@@ -2938,6 +3068,9 @@ function parseAndDisplayResult(responseText, promptText) {
 
         // 履歴に保存
         addHistory({ prompt: promptText || '（ランダム生成）', preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, explanationJa: parsed.explanation_ja || '', randomSeed: lastRandomSeed || null, timestamp: Date.now() });
+        pushUndoStack({ ...outputData }, promptText);
+        showVariationRow(true);
+        updateCharCount();
 
     } catch (error) {
         console.error('Parse Error:', error, responseText);
@@ -3102,7 +3235,6 @@ function setLoadingState(isLoading) {
         els.generateBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 spinner"></i><span>生成中...</span>`;
         lucide.createIcons();
     } else {
-        // ✅ 生成完了・エラー時に retryMessage を必ず非表示
         els.statusArea.classList.add('hidden');
         els.retryMessage.classList.add('hidden');
         updateRateLimitUI();
@@ -3311,12 +3443,753 @@ function getMultiCharInstruction() {
 7. constraints.must_keep に "both characters fully visible in frame" を必ず含めること`;
 }
 
+
+// ============================================================
+// Undo / Redo
+// ============================================================
+let undoStack = [];
+let redoStack = [];
+
+function pushUndoStack(data, prompt) {
+    if (!data || !data.json) return;
+    undoStack.push({ data: JSON.parse(JSON.stringify(data)), prompt: prompt || '' });
+    if (undoStack.length > 20) undoStack.shift();
+    redoStack = [];
+    updateUndoUI();
+}
+
+function initUndoRedo() {
+    const undoBtn = document.getElementById('undo-btn');
+    const redoBtn = document.getElementById('redo-btn');
+    if (undoBtn) undoBtn.addEventListener('click', doUndo);
+    if (redoBtn) redoBtn.addEventListener('click', doRedo);
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); doUndo(); }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); doRedo(); }
+    });
+}
+
+function doUndo() {
+    if (undoStack.length < 2) return;
+    const current = undoStack.pop();
+    redoStack.push(current);
+    const prev = undoStack[undoStack.length - 1];
+    applyOutputData(prev.data, prev.prompt);
+    updateUndoUI();
+}
+
+function doRedo() {
+    if (redoStack.length === 0) return;
+    const next = redoStack.pop();
+    undoStack.push(next);
+    applyOutputData(next.data, next.prompt);
+    updateUndoUI();
+}
+
+function applyOutputData(data, prompt) {
+    outputData = { ...data };
+    if (prompt && els.promptInput) els.promptInput.value = prompt;
+    if (!data.json) return;
+    const imagineContainer = document.getElementById('grok-imagine-container');
+    const imagineOutput    = document.getElementById('grok-imagine-output');
+    if (data.imagine && imagineContainer && imagineOutput) {
+        imagineOutput.textContent = data.imagine;
+        imagineContainer.classList.remove('hidden', 'opacity-0');
+    } else if (imagineContainer) {
+        imagineContainer.classList.add('hidden', 'opacity-0');
+    }
+    els.englishOutput.textContent  = data.en || '';
+    els.japaneseOutput.textContent = data.ja || '';
+    els.plainTextContainer.classList.remove('hidden', 'opacity-0');
+    els.jsonOutput.innerHTML = syntaxHighlight(JSON.stringify(data.json, null, 2));
+    els.emptyState.classList.add('hidden');
+    updateCharCount();
+}
+
+function updateUndoUI() {
+    const undoBtn   = document.getElementById('undo-btn');
+    const redoBtn   = document.getElementById('redo-btn');
+    const undoLabel = document.getElementById('undo-label');
+    if (undoBtn) undoBtn.disabled = undoStack.length < 2;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
+    if (undoLabel) undoLabel.textContent = undoStack.length > 1 ? `${undoStack.length - 1}件` : '';
+}
+
+// ============================================================
+// バリエーション生成
+// ============================================================
+function showVariationRow(show) {
+    const row = document.getElementById('variation-row');
+    if (!row) return;
+    if (show) row.classList.remove('hidden'); else row.classList.add('hidden');
+    const btn = document.getElementById('variation-btn');
+    if (btn) btn.disabled = !show || !outputData?.json;
+}
+
+function initVariation() {
+    const btn = document.getElementById('variation-btn');
+    if (!btn) return;
+    btn.addEventListener('click', handleVariation);
+}
+
+async function handleVariation() {
+    if (!outputData?.json) return;
+    const keys = getApiKeys();
+    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
+    const diffText = els.promptInput.value.trim();
+    if (!diffText) { showError('変更したい内容を入力してください。'); return; }
+    const allLimited = keys.every((_, i) => getKeyRateLimitCount(i) >= MAX_REQUESTS);
+    if (allLimited) { showError('すべてのAPIキーが制限中です。'); return; }
+
+    const prevJson = JSON.stringify(outputData.json, null, 2);
+    const variationPrompt = `以下は前回の生成結果のJSONです。これをベースに、ユーザーの差分指示に従って変更を加えた新しいプロンプトを生成してください。\n\n【前回のJSON】\n${prevJson}\n\n【差分指示（変更したい内容）】\n${diffText}\n\n差分指示に関係するフィールドのみ変更し、それ以外は前回の値を引き継いでください。`;
+
+    setLoadingState(true);
+    els.statusArea.classList.add('hidden');
+    els.errorMessage.classList.add('hidden');
+    els.retryMessage.classList.add('hidden');
+    try {
+        const responseData = await fetchWithKeyRotation(variationPrompt);
+        const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!responseText) throw new Error('AIから有効な応答がありませんでした。');
+        parseAndDisplayResult(responseText, `[バリエーション] ${diffText}`);
+    } catch(error) {
+        showError(error.message);
+    } finally {
+        setLoadingState(false);
+    }
+}
+
+// ============================================================
+// ネガティブプロンプト カスタムUI
+// ============================================================
+let negPrompts = [];
+
+function initNegPrompts() {
+    negPrompts = (() => { try { return JSON.parse(localStorage.getItem(NEG_PROMPT_KEY) || '[]'); } catch { return []; } })();
+    renderNegChips();
+
+    const addBtn    = document.getElementById('neg-add-btn');
+    const input     = document.getElementById('neg-input');
+    const toggle    = document.getElementById('neg-presets-toggle');
+    const presPanel = document.getElementById('neg-presets-panel');
+
+    if (addBtn) addBtn.addEventListener('click', addNegPrompt);
+    if (input)  input.addEventListener('keypress', e => { if (e.key === 'Enter') addNegPrompt(); });
+    if (toggle && presPanel) {
+        toggle.addEventListener('click', () => presPanel.classList.toggle('hidden'));
+    }
+    document.querySelectorAll('.neg-preset-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = btn.dataset.val;
+            if (val && !negPrompts.includes(val)) {
+                negPrompts.push(val);
+                saveNegPrompts();
+                renderNegChips();
+            }
+        });
+    });
+}
+
+function addNegPrompt() {
+    const input = document.getElementById('neg-input');
+    const val   = input?.value.trim();
+    if (!val || negPrompts.includes(val)) return;
+    negPrompts.push(val);
+    saveNegPrompts();
+    renderNegChips();
+    if (input) input.value = '';
+}
+
+function removeNegPrompt(val) {
+    negPrompts = negPrompts.filter(v => v !== val);
+    saveNegPrompts();
+    renderNegChips();
+}
+
+function saveNegPrompts() {
+    try { localStorage.setItem(NEG_PROMPT_KEY, JSON.stringify(negPrompts)); } catch(e) {}
+}
+
+function renderNegChips() {
+    const container = document.getElementById('neg-chips');
+    if (!container) return;
+    container.innerHTML = '';
+    negPrompts.forEach(v => {
+        const chip = document.createElement('span');
+        chip.className = 'neg-chip';
+        chip.innerHTML = `${escapeHtml(v)}<button onclick="removeNegPrompt('${escapeHtml(v)}')" title="削除">×</button>`;
+        container.appendChild(chip);
+    });
+}
+
+function getNegPromptInstruction() {
+    if (negPrompts.length === 0) return '';
+    return `\n\n【追加ネガティブプロンプト（必須）】\nnegative_prompt 配列に以下を必ず追加すること（既存の内容と統合）:\n${negPrompts.map(v => `"${v}"`).join(', ')}`;
+}
+
+// ============================================================
+// 文字数カウンター
+// ============================================================
+function updateCharCount() {
+    const text  = document.getElementById('grok-imagine-output')?.textContent || '';
+    const count = text.length;
+    const bar   = document.getElementById('char-bar');
+    const countEl  = document.getElementById('char-count');
+    const statusEl = document.getElementById('char-status');
+    if (!bar || !countEl) return;
+
+    const MAX_IDEAL = 1200;
+    const MAX_HARD  = 1800;
+    const pct = Math.min((count / MAX_HARD) * 100, 100);
+    bar.style.width = pct + '%';
+
+    if (count === 0) {
+        bar.className = 'h-full rounded-full transition-all duration-300 char-bar-ok';
+        countEl.textContent = '0 文字';
+        if (statusEl) statusEl.textContent = '';
+    } else if (count <= MAX_IDEAL) {
+        bar.className = 'h-full rounded-full transition-all duration-300 char-bar-ok';
+        countEl.textContent = `${count} 文字`;
+        if (statusEl) { statusEl.textContent = '✓ 最適範囲'; statusEl.style.color = '#14b8a6'; }
+    } else if (count <= MAX_HARD) {
+        bar.className = 'h-full rounded-full transition-all duration-300 char-bar-warn';
+        countEl.textContent = `${count} 文字`;
+        if (statusEl) { statusEl.textContent = '⚠ やや長め'; statusEl.style.color = '#f59e0b'; }
+    } else {
+        bar.className = 'h-full rounded-full transition-all duration-300 char-bar-over';
+        countEl.textContent = `${count} 文字`;
+        if (statusEl) { statusEl.textContent = '✗ 長すぎ'; statusEl.style.color = '#ef4444'; }
+    }
+}
+
+// ============================================================
+// QRコード / Web Share
+// ============================================================
+function initQR() {
+    const qrBtn   = document.getElementById('qr-btn');
+    const closeBtn= document.getElementById('close-qr-btn');
+    const shareBtn= document.getElementById('share-imagine-btn');
+    const copyBtn = document.getElementById('qr-copy-btn');
+    const modal   = document.getElementById('qr-modal');
+
+    if (qrBtn) qrBtn.addEventListener('click', () => {
+        if (!outputData?.imagine) { showError('先にプロンプトを生成してください。'); return; }
+        openQRModal(outputData.imagine);
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (copyBtn) copyBtn.addEventListener('click', () => {
+        if (outputData?.imagine) copyToClipboard(outputData.imagine, null, null);
+    });
+    if (shareBtn) shareBtn.addEventListener('click', async () => {
+        if (!outputData?.imagine) { showError('先にプロンプトを生成してください。'); return; }
+        if (navigator.share) {
+            try { await navigator.share({ title: 'Grok Imagine Prompt', text: outputData.imagine }); }
+            catch(e) { if (e.name !== 'AbortError') openQRModal(outputData.imagine); }
+        } else {
+            openQRModal(outputData.imagine);
+        }
+    });
+}
+
+function openQRModal(text) {
+    const modal = document.getElementById('qr-modal');
+    const wrap  = document.getElementById('qr-canvas-wrap');
+    if (!modal || !wrap) return;
+    wrap.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    wrap.appendChild(canvas);
+    generateQR(canvas, text);
+    modal.classList.add('show');
+    lucide.createIcons();
+}
+
+function generateQR(canvas, text) {
+    // QR生成: 外部ライブラリなしで簡易実装
+    // プロンプトが長いためURLエンコードしてデータURIで表示
+    const size = 200;
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+
+    // qrcode.jsを動的ロード
+    if (window.QRCode) {
+        new QRCode(canvas.parentElement, { text: text.slice(0, 900), width: 200, height: 200, correctLevel: QRCode.CorrectLevel.L });
+        canvas.remove();
+    } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+        script.onload = () => {
+            canvas.parentElement.innerHTML = '';
+            new QRCode(document.getElementById('qr-canvas-wrap'), { text: text.slice(0, 900), width: 200, height: 200, correctLevel: QRCode.CorrectLevel.L });
+        };
+        script.onerror = () => {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(0, 0, size, size);
+            ctx.fillStyle = '#14b8a6';
+            ctx.font = '13px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('QRライブラリを', size/2, 90);
+            ctx.fillText('読み込めませんでした', size/2, 110);
+            ctx.fillText('コピーボタンをご利用ください', size/2, 130);
+        };
+        document.head.appendChild(script);
+    }
+}
+
+// ============================================================
+// プロンプトテンプレート
+// ============================================================
+function getTemplates() { try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || '[]'); } catch { return []; } }
+function saveTemplates(arr) { try { localStorage.setItem(TEMPLATE_KEY, JSON.stringify(arr)); } catch(e) {} }
+
+function initTemplates() {
+    const saveBtn  = document.getElementById('save-template-btn');
+    const openBtn  = document.getElementById('open-template-btn');
+    const closeBtn = document.getElementById('close-template-btn');
+    const modal    = document.getElementById('template-modal');
+
+    if (saveBtn) saveBtn.addEventListener('click', saveCurrentTemplate);
+    if (openBtn) openBtn.addEventListener('click', () => { renderTemplateList(); modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+}
+
+function saveCurrentTemplate() {
+    const text = els.promptInput?.value.trim();
+    if (!text) { showError('テンプレートとして保存するテキストを入力してください。'); return; }
+    const name = prompt('テンプレート名を入力してください:', text.slice(0, 30) + (text.length > 30 ? '…' : ''));
+    if (!name) return;
+    const templates = getTemplates();
+    templates.unshift({ id: Date.now().toString(), name, text, created: new Date().toLocaleDateString('ja-JP') });
+    if (templates.length > 50) templates.pop();
+    saveTemplates(templates);
+    // フラッシュ
+    const btn = document.getElementById('save-template-btn');
+    if (btn) { btn.classList.add('text-amber-400'); setTimeout(() => btn.classList.remove('text-amber-400'), 800); }
+}
+
+function renderTemplateList() {
+    const list = document.getElementById('template-list');
+    if (!list) return;
+    const templates = getTemplates();
+    if (templates.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">保存済みテンプレートはありません</p>';
+        return;
+    }
+    list.innerHTML = '';
+    templates.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'template-card bg-slate-800/60 border border-slate-700 rounded-lg p-3';
+        div.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-medium text-slate-200 truncate">${escapeHtml(t.name)}</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5 line-clamp-2">${escapeHtml(t.text)}</p>
+                    <p class="text-[10px] text-slate-600 mt-0.5">${t.created || ''}</p>
+                </div>
+                <div class="flex gap-1.5 flex-shrink-0">
+                    <button onclick="applyTemplate('${t.id}')"
+                        class="text-xs text-grok-400 hover:text-grok-300 bg-grok-500/10 hover:bg-grok-500/20 px-2 py-1 rounded transition-colors">
+                        適用
+                    </button>
+                    <button onclick="deleteTemplate('${t.id}')"
+                        class="text-slate-500 hover:text-red-400 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>`;
+        list.appendChild(div);
+    });
+    lucide.createIcons();
+}
+
+function applyTemplate(id) {
+    const t = getTemplates().find(t => t.id === id);
+    if (!t) return;
+    if (els.promptInput) els.promptInput.value = t.text;
+    document.getElementById('template-modal')?.classList.remove('show');
+}
+
+function deleteTemplate(id) {
+    saveTemplates(getTemplates().filter(t => t.id !== id));
+    renderTemplateList();
+}
+
+// ============================================================
+// スナップショット（設定セット）
+// ============================================================
+function getSnapshots() { try { return JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || '[]'); } catch { return []; } }
+function saveSnapshots(arr) { try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(arr)); } catch(e) {} }
+
+function initSnapshots() {
+    const openBtn  = document.getElementById('open-snapshot-btn');
+    const closeBtn = document.getElementById('close-snapshot-btn');
+    const saveBtn  = document.getElementById('save-snapshot-btn');
+    const modal    = document.getElementById('snapshot-modal');
+
+    if (openBtn)  openBtn.addEventListener('click',  () => { renderSnapshotList(); modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const nameEl = document.getElementById('snapshot-name');
+            const name   = nameEl?.value.trim();
+            if (!name) { nameEl?.focus(); return; }
+            const snap = captureCurrentSettings(name);
+            const snaps = getSnapshots();
+            snaps.unshift(snap);
+            if (snaps.length > 30) snaps.pop();
+            saveSnapshots(snaps);
+            if (nameEl) nameEl.value = '';
+            renderSnapshotList();
+        });
+    }
+}
+
+function captureCurrentSettings(name) {
+    const mainName = document.getElementById('active-main-name')?.textContent?.trim() || '';
+    const subName  = document.getElementById('active-sub-name')?.textContent?.trim() || '';
+    return {
+        id:          Date.now().toString(),
+        name,
+        created:     new Date().toLocaleDateString('ja-JP'),
+        preset:      currentPreset,
+        model:       els.modelSelect?.value || '',
+        aspect:      els.aspectSelect?.value || '',
+        mainSubject: mainName,
+        subSubject:  subName,
+        camera: {
+            style:   document.getElementById('ph-camera-style')?.value || '',
+            angle:   document.getElementById('ph-angle')?.value || '',
+            shot:    document.getElementById('ph-shot-type')?.value || '',
+            light:   document.getElementById('ph-lighting')?.value || '',
+            dof:     document.getElementById('ph-dof')?.value || '',
+            scene:   document.getElementById('ph-scene')?.value || '',
+        },
+        negPrompts: [...negPrompts],
+    };
+}
+
+function applySnapshot(id) {
+    const snap = getSnapshots().find(s => s.id === id);
+    if (!snap) return;
+    if (snap.preset  && PRESETS[snap.preset]) setPreset(snap.preset);
+    if (snap.model   && els.modelSelect)  els.modelSelect.value  = snap.model;
+    if (snap.aspect  && els.aspectSelect) els.aspectSelect.value = snap.aspect;
+    const camMap = { 'ph-camera-style': snap.camera?.style, 'ph-angle': snap.camera?.angle, 'ph-shot-type': snap.camera?.shot, 'ph-lighting': snap.camera?.light, 'ph-dof': snap.camera?.dof, 'ph-scene': snap.camera?.scene };
+    Object.entries(camMap).forEach(([id, val]) => { const el = document.getElementById(id); if (el && val) el.value = val; });
+    if (snap.negPrompts) { negPrompts = [...snap.negPrompts]; saveNegPrompts(); renderNegChips(); }
+    document.getElementById('snapshot-modal')?.classList.remove('show');
+}
+
+function renderSnapshotList() {
+    const list = document.getElementById('snapshot-list');
+    if (!list) return;
+    const snaps = getSnapshots();
+    if (snaps.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">保存済みスナップショットはありません</p>';
+        return;
+    }
+    list.innerHTML = '';
+    snaps.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'snapshot-card bg-slate-800/60 border border-slate-700 rounded-lg p-3';
+        div.innerHTML = `
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-medium text-slate-200">${escapeHtml(s.name)}</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5">
+                        ${escapeHtml(s.preset || '')} · ${escapeHtml(s.aspect || '')} · ${escapeHtml(s.mainSubject || '被写体未設定')}
+                        ${s.subSubject && s.subSubject !== '未設定' ? ` + ${escapeHtml(s.subSubject)}` : ''}
+                    </p>
+                    <p class="text-[10px] text-slate-600">${s.created || ''}</p>
+                </div>
+                <div class="flex gap-1.5 flex-shrink-0">
+                    <button onclick="applySnapshot('${s.id}')"
+                        class="text-xs text-grok-400 hover:text-grok-300 bg-grok-500/10 hover:bg-grok-500/20 px-2 py-1 rounded transition-colors">適用</button>
+                    <button onclick="deleteSnapshot('${s.id}')" class="text-slate-500 hover:text-red-400 transition-colors">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>`;
+        list.appendChild(div);
+    });
+    lucide.createIcons();
+}
+
+function deleteSnapshot(id) {
+    saveSnapshots(getSnapshots().filter(s => s.id !== id));
+    renderSnapshotList();
+}
+
+// ============================================================
+// バッチ生成（連続生成）
+// ============================================================
+let batchResults = [];
+let batchActive  = 0;
+
+function initBatchGenerate() {
+    // バッチボタンをrandom-btn横に追加
+    const randomBtn = document.getElementById('random-btn');
+    if (!randomBtn || !randomBtn.parentElement) return;
+    const batchBtn = document.createElement('button');
+    batchBtn.id = 'batch-btn';
+    batchBtn.title = 'バッチ生成（同設定で複数回生成）';
+    batchBtn.className = 'bg-slate-700/80 hover:bg-slate-600 text-slate-300 py-3 sm:py-2.5 px-3 rounded-lg font-medium transition-all flex items-center justify-center gap-1 text-sm border border-slate-600 hover:border-slate-500 disabled:opacity-40 disabled:cursor-not-allowed';
+    batchBtn.innerHTML = '<i data-lucide="layers" class="w-4 h-4"></i><span>×3</span>';
+    batchBtn.disabled = true;
+    randomBtn.parentElement.appendChild(batchBtn);
+    lucide.createIcons();
+
+    // ×3 / ×5 トグル
+    let batchCount = 3;
+    batchBtn.addEventListener('click', async () => {
+        const keys = getApiKeys();
+        if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
+        const promptText = els.promptInput.value.trim();
+        if (!promptText) { showError('描きたいイメージを入力してください。'); return; }
+        batchResults = [];
+        batchActive  = 0;
+        const tabsRow = document.getElementById('batch-tabs-row');
+        const tabsEl  = document.getElementById('batch-tabs');
+        if (tabsRow) tabsRow.classList.remove('hidden');
+        if (tabsEl)  tabsEl.innerHTML = '';
+        for (let i = 0; i < batchCount; i++) {
+            const tab = document.createElement('button');
+            tab.className = 'batch-tab';
+            tab.textContent = `#${i+1} 生成中…`;
+            tab.dataset.idx = i;
+            tab.addEventListener('click', () => showBatchResult(i));
+            tabsEl?.appendChild(tab);
+        }
+        for (let i = 0; i < batchCount; i++) {
+            try {
+                setLoadingState(true);
+                const responseData = await fetchWithKeyRotation(promptText);
+                const responseText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!responseText) throw new Error('応答なし');
+                let cleanText = responseText.replace(/^\s*```[\w]*\s*/i,'').replace(/\s*```\s*$/i,'').trim();
+                const parsed = JSON.parse(cleanText);
+                batchResults[i] = { json: parsed.grok_prompt_json, en: parsed.english_prompt, ja: parsed.japanese_prompt, imagine: parsed.grok_imagine_prompt || '' };
+                const tab = tabsEl?.querySelector(`[data-idx="${i}"]`);
+                if (tab) tab.textContent = `#${i+1} 完了`;
+                if (i === 0) { outputData = { ...batchResults[0] }; showBatchResult(0); addHistory({ prompt: promptText, preset: currentPreset, model: els.modelSelect.value, outputData: { ...outputData }, explanationJa: parsed.explanation_ja || '', timestamp: Date.now() }); pushUndoStack({ ...outputData }, promptText); updateCharCount(); showVariationRow(true); }
+            } catch(e) {
+                const tab = tabsEl?.querySelector(`[data-idx="${i}"]`);
+                if (tab) { tab.textContent = `#${i+1} エラー`; tab.style.color = '#ef4444'; }
+            } finally {
+                setLoadingState(false);
+            }
+            if (i < batchCount - 1) await sleep(1200);
+        }
+    });
+
+    // ×3/×5 切り替え
+    batchBtn.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        batchCount = batchCount === 3 ? 5 : 3;
+        batchBtn.querySelector('span').textContent = `×${batchCount}`;
+    });
+
+    // generate-btn が有効になったらバッチも有効に
+    const obs = new MutationObserver(() => {
+        const genBtn = document.getElementById('generate-btn');
+        if (batchBtn) batchBtn.disabled = genBtn?.disabled ?? true;
+    });
+    const genBtn = document.getElementById('generate-btn');
+    if (genBtn) obs.observe(genBtn, { attributes: true, attributeFilter: ['disabled'] });
+}
+
+function showBatchResult(idx) {
+    const data = batchResults[idx];
+    if (!data) return;
+    batchActive = idx;
+    outputData  = { ...data };
+    applyOutputData(data, null);
+    document.querySelectorAll('.batch-tab').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+    });
+}
+
+// ============================================================
+// 並列比較ビュー
+// ============================================================
+let compareSelected = [];
+
+function initCompare() {
+    const compareBtn  = document.getElementById('compare-btn');
+    const closeBtn    = document.getElementById('close-compare-btn');
+    const doCompBtn   = document.getElementById('do-compare-btn');
+    const modal       = document.getElementById('compare-modal');
+
+    if (compareBtn) compareBtn.addEventListener('click', () => {
+        compareSelected = [];
+        renderCompareHistoryList();
+        modal?.classList.add('show');
+        document.getElementById('compare-result')?.classList.add('hidden');
+        lucide.createIcons();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (doCompBtn) doCompBtn.addEventListener('click', doCompare);
+}
+
+function renderCompareHistoryList() {
+    const container = document.getElementById('compare-history-list');
+    if (!container) return;
+    const history = getHistory();
+    container.innerHTML = '';
+    if (history.length === 0) { container.innerHTML = '<p class="text-xs text-slate-500">履歴がありません</p>'; return; }
+    history.slice(0, 20).forEach((entry, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'compare-select-card bg-slate-800/60 border border-slate-700 rounded-lg px-3 py-2 text-left transition-all';
+        btn.dataset.idx = i;
+        btn.innerHTML = `<p class="text-xs text-slate-300 truncate max-w-[180px]">${escapeHtml(entry.prompt || '（ランダム）')}</p><p class="text-[10px] text-slate-500">${entry.preset || ''}</p>`;
+        btn.addEventListener('click', () => {
+            if (compareSelected.includes(i)) {
+                compareSelected = compareSelected.filter(x => x !== i);
+                btn.classList.remove('selected');
+            } else if (compareSelected.length < 2) {
+                compareSelected.push(i);
+                btn.classList.add('selected');
+            }
+            const doBtn = document.getElementById('do-compare-btn');
+            if (doBtn) doBtn.disabled = compareSelected.length !== 2;
+        });
+        container.appendChild(btn);
+    });
+}
+
+function doCompare() {
+    if (compareSelected.length !== 2) return;
+    const history = getHistory();
+    const [a, b]  = compareSelected.map(i => history[i]);
+    const left    = document.getElementById('compare-left');
+    const right   = document.getElementById('compare-right');
+    const result  = document.getElementById('compare-result');
+    if (!left || !right || !result) return;
+
+    function renderEntry(el, entry) {
+        el.innerHTML = `
+            <div>
+                <p class="text-[10px] font-semibold text-slate-400 mb-1">プロンプト</p>
+                <p class="text-xs text-slate-300 bg-slate-800/60 rounded p-2">${escapeHtml(entry.prompt || '')}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-semibold text-slate-400 mb-1">スタイル / モデル</p>
+                <p class="text-xs text-slate-300">${escapeHtml(entry.preset || '')} / ${escapeHtml(entry.model || '')}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-semibold text-slate-400 mb-1">Grok Imagine プロンプト</p>
+                <p class="text-xs text-slate-300 bg-slate-800/60 rounded p-2 whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(entry.outputData?.imagine || '（なし）')}</p>
+            </div>
+            <div>
+                <p class="text-[10px] font-semibold text-slate-400 mb-1">English Prompt</p>
+                <p class="text-xs text-slate-300 bg-slate-800/60 rounded p-2 whitespace-pre-wrap max-h-40 overflow-y-auto">${escapeHtml(entry.outputData?.en || '（なし）')}</p>
+            </div>`;
+    }
+    renderEntry(left, a);
+    renderEntry(right, b);
+    result.classList.remove('hidden');
+}
+
 function escapeHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
+
+<!-- ===== QRコードモーダル ===== -->
+<div id="qr-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="qr-code" class="w-4 h-4 text-grok-500"></i> QRコード
+            </h2>
+            <button id="close-qr-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-6 flex flex-col items-center gap-4">
+            <div id="qr-canvas-wrap" class="bg-white p-3 rounded-xl"></div>
+            <p class="text-xs text-slate-500 text-center max-w-[260px]">スマホでスキャンするとGrok Imagineプロンプトをコピーできます</p>
+            <button id="qr-copy-btn" class="bg-grok-600 hover:bg-grok-500 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <i data-lucide="copy" class="w-4 h-4"></i> テキストをコピー
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 比較ビューモーダル ===== -->
+<div id="compare-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="split" class="w-4 h-4 text-grok-500"></i> 並列比較ビュー
+                <span class="text-[10px] text-slate-500">（履歴から2件選択）</span>
+            </h2>
+            <button id="close-compare-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="compare-select-area" class="p-4 border-b border-slate-700/50 flex-shrink-0">
+            <p class="text-xs text-slate-400 mb-2">比較する履歴を2件選択してください:</p>
+            <div id="compare-history-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto"></div>
+            <button id="do-compare-btn" disabled
+                class="mt-3 bg-grok-600 hover:bg-grok-500 text-white px-4 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                比較表示
+            </button>
+        </div>
+        <div id="compare-result" class="hidden flex-1 overflow-y-auto grid grid-cols-2 gap-0 divide-x divide-slate-700">
+            <div id="compare-left"  class="p-4 space-y-3 overflow-y-auto"></div>
+            <div id="compare-right" class="p-4 space-y-3 overflow-y-auto"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== スナップショットモーダル ===== -->
+<div id="snapshot-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="camera" class="w-4 h-4 text-grok-500"></i> 設定スナップショット
+            </h2>
+            <button id="close-snapshot-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div class="bg-slate-800/60 rounded-lg p-3 space-y-2">
+                <p class="text-xs font-semibold text-slate-400">現在の全設定を保存（被写体・カメラ・スタイル・アスペクト）</p>
+                <div class="flex gap-2">
+                    <input id="snapshot-name" type="text" placeholder="スナップショット名（例: 夏の撮影会）"
+                        class="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500">
+                    <button id="save-snapshot-btn" class="bg-grok-600 hover:bg-grok-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 flex-shrink-0">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i> 保存
+                    </button>
+                </div>
+            </div>
+            <div id="snapshot-list" class="space-y-2 max-h-64 overflow-y-auto">
+                <p class="text-xs text-slate-500 text-center py-4">保存済みスナップショットはありません</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== テンプレートモーダル ===== -->
+<div id="template-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="library" class="w-4 h-4 text-amber-400"></i> プロンプトテンプレート
+            </h2>
+            <button id="close-template-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div id="template-list" class="space-y-2 max-h-80 overflow-y-auto">
+                <p class="text-xs text-slate-500 text-center py-4">保存済みテンプレートはありません</p>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
 
