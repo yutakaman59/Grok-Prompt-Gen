@@ -128,6 +128,15 @@
         .color-swatch.active { border-color:#fff !important; transform:scale(1.2); }
         #subject-detail-modal { display:none; }
         #subject-detail-modal.show { display:flex; }
+
+        #ai-improve-modal{display:none}#ai-improve-modal.show{display:flex}
+        #pinned-panel{display:none}#pinned-panel.show{display:block}
+        .pinned-card{transition:all .15s;border:1px solid rgba(71,85,105,.5)}
+        .pinned-card:hover{border-color:#14b8a6!important;background:rgba(20,184,166,.05)!important}
+        #systemprompt-modal{display:none}#systemprompt-modal.show{display:flex}
+        #reset-modal{display:none}#reset-modal.show{display:flex}
+        .suggest-item{cursor:pointer;padding:6px 12px;font-size:12px;color:#cbd5e1;transition:background .1s}
+        .suggest-item:hover{background:rgba(20,184,166,.15);color:#14b8a6}
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
@@ -153,6 +162,18 @@
                 </select>
             </div>
             <!-- APIキー管理 -->
+            <button id="open-pinned-btn" title="ピン留め結果" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-amber-500/50 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-amber-400">
+                <i data-lucide="pin" class="w-3.5 h-3.5"></i><span id="pinned-count-badge" class="hidden bg-amber-500 text-white text-[9px] px-1.5 rounded-full ml-0.5">0</span>
+            </button>
+            <button id="open-systemprompt-btn" title="システムプロンプト編集" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-indigo-500/50 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-indigo-400">
+                <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+            </button>
+            <button id="open-reset-btn" title="設定を選択してリセット" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-red-500/50 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-red-400">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            </button>
+            <button id="open-shortcut-header-btn" title="ショートカット一覧(?)" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-slate-300">
+                <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
+            </button>
             <button id="open-keys-btn" class="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-grok-500 text-xs px-2.5 py-1.5 rounded-md transition-colors flex-shrink-0">
                 <i data-lucide="key-round" class="w-3.5 h-3.5 text-grok-500"></i>
                 <span>APIキー</span>
@@ -801,9 +822,11 @@
             <label for="prompt-input" class="block text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
                 <i data-lucide="pen-tool" class="w-4 h-4 text-grok-500"></i> 描きたい画像のイメージ
             </label>
+            <div class="relative">
             <textarea id="prompt-input" rows="4"
                 class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-base sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-grok-500 focus:ring-1 focus:ring-grok-500 resize-none transition-shadow"
                 placeholder="例: サイバーパンクな街角に立つ、ネオンに照らされた黒猫。高画質でリアルな質感。"></textarea>
+            </div>
 
             <!-- ステータスエリア -->
             <!-- ランダムプレビューパネル -->
@@ -1108,6 +1131,10 @@
                     <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
                     <span id="copy-json-text" class="hidden sm:inline">コピー</span>
                 </button>
+                <button id="export-markdown-btn" title="Markdownレポートをダウンロード" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">MD出力</span>
+                </button>
             </div>
             <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
                 <pre><code id="json-output" class="font-mono text-sm leading-relaxed block text-slate-300"></code></pre>
@@ -1135,6 +1162,8 @@ const PRESET_KEY         = 'grok_gen_preset';
         const STATS_KEY          = 'grok_gen_stats';
         const COLOR_PALETTE_KEY  = 'grok_gen_color_palette';
         const SUBJECT_DETAIL_KEY = 'grok_gen_subject_detail';
+        const PINNED_KEY         = 'grok_gen_pinned';
+        const CUSTOM_PRESETS_KEY = 'grok_gen_custom_presets';
 const MODEL_KEY          = 'grok_gen_model';
         const ASPECT_KEY         = 'grok_gen_aspect';
 const MAX_REQUESTS       = 5;
@@ -1887,6 +1916,15 @@ function init() {
     initColorPalette();
     initSubjectDetail();
     initQualityScore();
+    initAiImprove();
+    initPinned();
+    initSystemPromptEditor();
+    initResetModal();
+    initSceneSuggest();
+    initMarkdownExport();
+    document.getElementById('open-shortcut-header-btn')?.addEventListener('click', () => {
+        document.getElementById('shortcut-modal')?.classList.add('show'); lucide.createIcons();
+    });
 }
 
 // ===================== プリセット =====================
@@ -2889,7 +2927,7 @@ function getCameraInstruction() {
             els.statusArea.classList.add('hidden');
             els.errorMessage.classList.add('hidden');
             try {
-                const systemInstruction = PRESETS[currentPreset].instruction
+                const systemInstruction = (getCustomSystemPrompt(currentPreset) || PRESETS[currentPreset].instruction)
                     + getAspectInstruction()
                     + getCameraInstruction()
                     + getMultiCharInstruction()
@@ -4718,6 +4756,430 @@ function showQualityScore(data) {
     lucide.createIcons();
 }
 
+
+// ============================================================
+// AI改善提案
+// ============================================================
+let _aiImproveText = '';
+
+function initAiImprove() {
+    const btn      = document.getElementById('ai-improve-btn');
+    const closeBtn = document.getElementById('close-ai-improve-btn');
+    const applyBtn = document.getElementById('apply-ai-improve-btn');
+    const modal    = document.getElementById('ai-improve-modal');
+    if (btn)      btn.addEventListener('click', runAiImprove);
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (applyBtn) applyBtn.addEventListener('click', () => {
+        if (_aiImproveText && els.promptInput) {
+            els.promptInput.value = _aiImproveText;
+            modal?.classList.remove('show');
+            document.getElementById('generate-btn')?.click();
+        }
+    });
+}
+
+async function runAiImprove() {
+    if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
+    const keys = getApiKeys();
+    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
+    const modal    = document.getElementById('ai-improve-modal');
+    const loading  = document.getElementById('ai-improve-loading');
+    const content  = document.getElementById('ai-improve-content');
+    const actions  = document.getElementById('ai-improve-actions');
+    modal?.classList.add('show');
+    lucide.createIcons();
+    if (loading) { loading.classList.remove('hidden'); loading.style.display = 'flex'; }
+    if (content)  content.textContent = '';
+    if (actions)  actions.classList.add('hidden');
+
+    const qualResult = calcQualityScore(outputData);
+    const lowItems   = qualResult?.details.filter(d => !d.ok).map(d => `・${d.label}（${d.score}/${d.max}点）`).join('\n') || '（なし）';
+    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。
+以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きしてください。
+また最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。
+
+【現在の入力テキスト】
+${els.promptInput?.value || ''}
+
+【現在のJSON】
+${JSON.stringify(outputData.json, null, 2).slice(0, 1500)}
+
+【スコアが低い項目】
+${lowItems}
+
+出力形式:
+## 改善提案
+- ...（箇条書き3〜5点）
+
+## 改善後の入力テキスト
+（ここに改善後のテキストのみ）`;
+
+    try {
+        const responseData = await fetchWithKeyRotation(improvePrompt);
+        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
+        if (content) content.textContent = text;
+        // 「改善後の入力テキスト」セクションを抽出
+        const match = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
+        if (match) {
+            _aiImproveText = match[1].trim().split('\n')[0].trim();
+            if (actions) actions.classList.remove('hidden');
+        }
+    } catch(e) {
+        if (content) content.textContent = 'エラー: ' + e.message;
+    } finally {
+        if (loading) { loading.classList.add('hidden'); loading.style.display = 'none'; }
+        lucide.createIcons();
+    }
+}
+
+// ============================================================
+// ピン留め
+// ============================================================
+function getPinned() { try { return JSON.parse(localStorage.getItem(PINNED_KEY) || '[]'); } catch { return []; } }
+function savePinned(arr) { try { localStorage.setItem(PINNED_KEY, JSON.stringify(arr)); } catch(e) {} }
+
+function initPinned() {
+    const openBtn  = document.getElementById('open-pinned-btn');
+    const closeBtn = document.getElementById('close-pinned-btn');
+    const pinBtn   = document.getElementById('pin-result-btn');
+    const panel    = document.getElementById('pinned-panel');
+    if (openBtn)  openBtn.addEventListener('click',  () => { renderPinnedList(); panel?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => panel?.classList.remove('show'));
+    if (pinBtn)   pinBtn.addEventListener('click', pinCurrentResult);
+    updatePinnedBadge();
+}
+
+function pinCurrentResult() {
+    if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
+    const pinned = getPinned();
+    const entry  = {
+        id:       Date.now().toString(),
+        prompt:   els.promptInput?.value.trim() || '',
+        preset:   currentPreset,
+        imagine:  outputData.imagine || '',
+        en:       outputData.en || '',
+        ja:       outputData.ja || '',
+        json:     outputData.json,
+        pinned_at: new Date().toLocaleString('ja-JP'),
+    };
+    pinned.unshift(entry);
+    if (pinned.length > 20) pinned.pop();
+    savePinned(pinned);
+    updatePinnedBadge();
+    const btn = document.getElementById('pin-result-btn');
+    if (btn) {
+        btn.textContent = '✅ ピン留めしました';
+        btn.disabled = true;
+        setTimeout(() => {
+            btn.innerHTML = '<i data-lucide="pin" class="w-3.5 h-3.5"></i> この結果をピン留め';
+            btn.disabled = false;
+            lucide.createIcons();
+        }, 1500);
+    }
+}
+
+function updatePinnedBadge() {
+    const badge = document.getElementById('pinned-count-badge');
+    const count = getPinned().length;
+    if (!badge) return;
+    if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+    else badge.classList.add('hidden');
+}
+
+function renderPinnedList() {
+    const list = document.getElementById('pinned-list');
+    if (!list) return;
+    const pinned = getPinned();
+    if (pinned.length === 0) {
+        list.innerHTML = '<p class="text-xs text-slate-500 text-center py-4">ピン留めされた結果はありません</p>';
+        return;
+    }
+    list.innerHTML = '';
+    pinned.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'pinned-card bg-slate-800/60 rounded-lg p-2.5 space-y-1.5';
+        div.innerHTML = `
+            <div class="flex items-start justify-between gap-1">
+                <p class="text-[10px] text-slate-400 truncate flex-1">${escapeHtml(p.pinned_at)}</p>
+                <div class="flex gap-1 flex-shrink-0">
+                    <button onclick="restorePinned('${p.id}')" title="この結果を復元"
+                        class="text-grok-400 hover:text-grok-300 text-[10px] px-1.5 py-0.5 bg-grok-500/10 hover:bg-grok-500/20 rounded transition-colors">復元</button>
+                    <button onclick="deletePinned('${p.id}')" title="削除"
+                        class="text-slate-500 hover:text-red-400 transition-colors px-1">×</button>
+                </div>
+            </div>
+            <p class="text-xs text-slate-300 line-clamp-1">${escapeHtml(p.prompt || '（ランダム）')}</p>
+            <p class="text-[10px] text-slate-500 line-clamp-2">${escapeHtml((p.imagine || '').slice(0, 120))}${p.imagine?.length > 120 ? '…' : ''}</p>`;
+        list.appendChild(div);
+    });
+}
+
+function restorePinned(id) {
+    const p = getPinned().find(x => x.id === id);
+    if (!p) return;
+    outputData = { json: p.json, en: p.en, ja: p.ja, imagine: p.imagine };
+    applyOutputData(outputData, p.prompt);
+    document.getElementById('pinned-panel')?.classList.remove('show');
+}
+
+function deletePinned(id) {
+    savePinned(getPinned().filter(p => p.id !== id));
+    updatePinnedBadge();
+    renderPinnedList();
+}
+
+// ============================================================
+// システムプロンプト編集
+// ============================================================
+function getCustomPrompts() { try { return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || '{}'); } catch { return {}; } }
+function saveCustomPrompts(obj) { try { localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(obj)); } catch(e) {} }
+function getCustomSystemPrompt(preset) { return getCustomPrompts()[preset] || null; }
+
+function initSystemPromptEditor() {
+    const openBtn     = document.getElementById('open-systemprompt-btn');
+    const closeBtn    = document.getElementById('close-systemprompt-btn');
+    const saveBtn     = document.getElementById('sp-save-btn');
+    const resetBtn    = document.getElementById('sp-reset-btn');
+    const resetAllBtn = document.getElementById('sp-reset-all-btn');
+    const modal       = document.getElementById('systemprompt-modal');
+    const select      = document.getElementById('sp-preset-select');
+    const textarea    = document.getElementById('sp-textarea');
+
+    if (openBtn) openBtn.addEventListener('click', () => {
+        populateSpPresetSelect();
+        loadSpTextarea();
+        modal?.classList.add('show');
+        lucide.createIcons();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (select)   select.addEventListener('change', loadSpTextarea);
+    if (saveBtn) saveBtn.addEventListener('click', () => {
+        const key  = select?.value;
+        const text = textarea?.value.trim();
+        if (!key || !text) return;
+        const customs = getCustomPrompts();
+        customs[key]  = text;
+        saveCustomPrompts(customs);
+        // 保存フラッシュ
+        if (saveBtn) { saveBtn.textContent = '✅ 保存しました'; setTimeout(() => { saveBtn.textContent = '保存して適用'; }, 1200); }
+    });
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+        const key = select?.value;
+        if (!key) return;
+        const customs = getCustomPrompts();
+        delete customs[key];
+        saveCustomPrompts(customs);
+        if (textarea) textarea.value = PRESETS[key]?.instruction || '';
+        resetBtn.textContent = '✅ リセット完了';
+        setTimeout(() => { resetBtn.innerHTML = '<i data-lucide="rotate-ccw" class="w-3 h-3"></i> リセット'; lucide.createIcons(); }, 1200);
+    });
+    if (resetAllBtn) resetAllBtn.addEventListener('click', () => {
+        if (!confirm('全プリセットのカスタムシステムプロンプトをリセットしますか？')) return;
+        saveCustomPrompts({});
+        loadSpTextarea();
+    });
+}
+
+function populateSpPresetSelect() {
+    const select = document.getElementById('sp-preset-select');
+    if (!select) return;
+    select.innerHTML = '';
+    Object.entries(PRESETS).forEach(([key, val]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = val.label || key;
+        if (key === currentPreset) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+function loadSpTextarea() {
+    const select   = document.getElementById('sp-preset-select');
+    const textarea = document.getElementById('sp-textarea');
+    if (!select || !textarea) return;
+    const key     = select.value;
+    const customs = getCustomPrompts();
+    textarea.value = customs[key] || PRESETS[key]?.instruction || '';
+}
+
+// ============================================================
+// 設定完全リセット
+// ============================================================
+function initResetModal() {
+    const openBtn   = document.getElementById('open-reset-btn');
+    const closeBtn  = document.getElementById('close-reset-btn');
+    const doBtn     = document.getElementById('do-reset-btn');
+    const selAll    = document.getElementById('select-all-reset-btn');
+    const deselAll  = document.getElementById('deselect-all-reset-btn');
+    const modal     = document.getElementById('reset-modal');
+    const checkboxIds = ['reset-neg','reset-color','reset-subjectdetail','reset-camera-presets','reset-snapshots','reset-templates','reset-history','reset-stats','reset-systemprompts'];
+
+    if (openBtn)  openBtn.addEventListener('click',  () => { modal?.classList.add('show'); lucide.createIcons(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (selAll)   selAll.addEventListener('click',   () => checkboxIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = true; }));
+    if (deselAll) deselAll.addEventListener('click', () => checkboxIds.forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; }));
+    if (doBtn) doBtn.addEventListener('click', () => {
+        const checked = checkboxIds.filter(id => document.getElementById(id)?.checked);
+        if (checked.length === 0) { alert('リセットする項目を選択してください。'); return; }
+        if (!confirm(`選択した${checked.length}件をリセットします。元に戻せません。`)) return;
+        const keyMap = {
+            'reset-neg':            NEG_PROMPT_KEY,
+            'reset-color':          COLOR_PALETTE_KEY,
+            'reset-subjectdetail':  SUBJECT_DETAIL_KEY,
+            'reset-camera-presets': CAMERA_PRESET_KEY,
+            'reset-snapshots':      SNAPSHOT_KEY,
+            'reset-templates':      TEMPLATE_KEY,
+            'reset-history':        HISTORY_KEY,
+            'reset-stats':          STATS_KEY,
+            'reset-systemprompts':  CUSTOM_PRESETS_KEY,
+        };
+        checked.forEach(id => {
+            const key = keyMap[id];
+            if (key) localStorage.removeItem(key);
+        });
+        // UI再初期化
+        if (checked.includes('reset-neg'))           { negPrompts = []; renderNegChips(); }
+        if (checked.includes('reset-color'))         { selectedColors = []; selectedTone = ''; updateColorSwatchUI(); const ts = document.getElementById('color-tone-select'); if (ts) ts.value = ''; }
+        if (checked.includes('reset-subjectdetail')) { subjectDetail = {}; updateSubjectDetailBadge(); }
+        if (checked.includes('reset-history'))       { renderHistory(); }
+        modal?.classList.remove('show');
+        alert('✅ リセットしました。');
+    });
+}
+
+// ============================================================
+// シーンサジェスト
+// ============================================================
+const SCENE_SUGGESTIONS = {
+    '学校': ['学校の教室で制服姿の女子高生', '放課後の廊下で佇む少年', '学校の屋上から夕焼けを眺める少女'],
+    '夕暮': ['夕暮れの海岸を歩く女性', '夕焼けに染まる街並みと人物', '夕暮れの公園のベンチに座る少女'],
+    '夜': ['ネオンが輝く夜の都市と人物', '夜の屋上で星を見上げる女性', '深夜のカフェで読書する人物'],
+    '森': ['深い森の中に佇む少女', '木漏れ日の森で本を読む女性', '霧に包まれた幻想的な森'],
+    '海': ['夏の砂浜で波と戯れる少女', '海岸の岩場に立つ人物', '嵐の海を見渡す崖の上の女性'],
+    '雨': ['雨の中傘を差す女性', '窓ガラスに映る雨粒と人物', '雨上がりの街を歩く少女'],
+    '雪': ['雪が降る中コートを着た女性', '雪の中の神社と巫女', '吹雪の中に立つ孤独な人物'],
+    '花': ['桜が舞う公園の花見', '満開の花畑に佇む少女', 'バラ園で写真を撮る女性'],
+    'カフェ': ['おしゃれなカフェでコーヒーを飲む女性', 'カフェの窓際席で読書する人物', '朝のカフェテラスで微笑む少女'],
+    '電車': ['電車の窓から外を見る女性', '夕暮れの電車内で音楽を聴く少女', '空いた電車の座席に座る人物'],
+    'ファンタジー': ['魔法使いが詠唱するシーン', '古城の前に立つ騎士', '精霊が舞う幻想的な森の妖精'],
+    'サイバー': ['ネオン輝くサイバーパンク都市の女性', 'ホログラムを操る未来の科学者', 'サイバーウェアを装備した戦士'],
+};
+
+function initSceneSuggest() {
+    const input = els.promptInput;
+    const panel = document.getElementById('scene-suggest-panel');
+    if (!input || !panel) return;
+
+    // panelをinputの親に移動
+    input.parentElement?.appendChild(panel);
+
+    let suggestActive = false;
+    input.addEventListener('input', () => {
+        const val = input.value;
+        const matches = [];
+        Object.entries(SCENE_SUGGESTIONS).forEach(([keyword, suggestions]) => {
+            if (val.includes(keyword)) {
+                suggestions.forEach(s => matches.push(s));
+            }
+        });
+        if (matches.length > 0 && val.length > 0) {
+            panel.innerHTML = matches.slice(0, 5).map(m =>
+                `<div class="suggest-item" data-val="${escapeHtml(m)}">${escapeHtml(m)}</div>`
+            ).join('');
+            panel.style.display = 'block';
+            panel.querySelectorAll('.suggest-item').forEach(item => {
+                item.addEventListener('mousedown', e => {
+                    e.preventDefault();
+                    input.value = item.dataset.val;
+                    panel.style.display = 'none';
+                });
+            });
+        } else {
+            panel.style.display = 'none';
+        }
+    });
+    input.addEventListener('blur', () => setTimeout(() => { panel.style.display = 'none'; }, 150));
+    input.addEventListener('focus', () => input.dispatchEvent(new Event('input')));
+}
+
+// ============================================================
+// Markdownレポート出力
+// ============================================================
+function initMarkdownExport() {
+    const btn = document.getElementById('export-markdown-btn');
+    if (!btn) return;
+    btn.addEventListener('click', exportMarkdown);
+}
+
+function exportMarkdown() {
+    if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
+    const prompt  = els.promptInput?.value.trim() || '（ランダム生成）';
+    const preset  = PRESETS[currentPreset]?.label || currentPreset;
+    const aspect  = els.aspectSelect?.value || '';
+    const model   = els.modelSelect?.value || '';
+    const quality = calcQualityScore(outputData);
+    const qScore  = quality?.score ?? '–';
+    const qDetail = quality?.details.map(d => `| ${d.label} | ${d.score}/${d.max} | ${d.ok ? '✅' : '⚠️'} |`).join('\n') || '';
+    const ts      = new Date().toLocaleString('ja-JP');
+
+    const md = `# Grok Prompt Generator — 生成レポート
+
+**生成日時:** ${ts}
+**入力テキスト:** ${prompt}
+**スタイル:** ${preset} | **アスペクト比:** ${aspect} | **モデル:** ${model}
+
+---
+
+## 📸 Grok Imagine プロンプト
+
+\`\`\`
+${outputData.imagine || '（なし）'}
+\`\`\`
+
+## 🇺🇸 English Prompt
+
+${outputData.en || '（なし）'}
+
+## 🇯🇵 日本語プロンプト
+
+${outputData.ja || '（なし）'}
+
+---
+
+## ⭐ 品質スコア: ${qScore} / 100
+
+| 評価項目 | スコア | 判定 |
+|---------|--------|------|
+${qDetail}
+
+---
+
+## 📋 JSON
+
+\`\`\`json
+${JSON.stringify(outputData.json, null, 2)}
+\`\`\`
+
+---
+*Generated by Grok Prompt Generator*
+`;
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    downloadBlob(blob, `grok_prompt_${Date.now()}.md`);
+}
+
+// ============================================================
+// カスタムSPヘルパー（宣言済みの場合はスキップ）
+// ============================================================
+if (typeof getCustomSystemPrompt === 'undefined') {
+    function getCustomSystemPrompt(preset) {
+        try { return JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || '{}')[preset] || null; } catch { return null; }
+    }
+}
+
 function escapeHtml(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -4828,7 +5290,13 @@ document.addEventListener('DOMContentLoaded', init);
     <div class="h-2 bg-slate-800 rounded-full overflow-hidden mb-3">
         <div id="quality-score-bar" class="h-full bg-grok-500 rounded-full" style="width:0%"></div>
     </div>
-    <div id="quality-details" class="space-y-1.5 text-xs"></div>
+    <div id="quality-details" class="space-y-1.5 text-xs mb-3"></div>
+    <button id="ai-improve-btn" class="w-full bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/40 text-purple-300 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5 mb-1.5">
+        <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> AIに改善提案を聞く
+    </button>
+    <button id="pin-result-btn" class="w-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+        <i data-lucide="pin" class="w-3.5 h-3.5"></i> この結果をピン留め
+    </button>
 </div>
 
 <!-- ===== 被写体詳細エディターモーダル ===== -->
@@ -4869,5 +5337,95 @@ document.addEventListener('DOMContentLoaded', init);
         </div>
     </div>
 </div>
+
+<!-- AI改善提案 -->
+<div id="ai-improve-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-xl shadow-2xl flex flex-col max-h-[85vh]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm"><i data-lucide="wand-2" class="w-4 h-4 text-purple-400"></i> AI改善提案</h2>
+            <button id="close-ai-improve-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 flex-1 overflow-y-auto space-y-3">
+            <div id="ai-improve-loading" class="hidden items-center gap-3 text-slate-400 text-sm py-4 justify-center">
+                <i data-lucide="loader-2" class="w-5 h-5 spinner text-purple-400"></i> AIが改善提案を生成中...
+            </div>
+            <div id="ai-improve-content" class="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap"></div>
+            <div id="ai-improve-actions" class="hidden pt-2">
+                <button id="apply-ai-improve-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5"></i> この提案を反映して再生成
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ピン留めパネル -->
+<div id="pinned-panel" class="fixed top-16 right-4 z-[150] bg-slate-900 border border-amber-500/30 rounded-2xl shadow-2xl w-80 max-h-[70vh] flex flex-col">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700 flex-shrink-0">
+        <span class="text-xs font-semibold text-amber-300 flex items-center gap-1.5"><i data-lucide="pin" class="w-3.5 h-3.5"></i> ピン留め結果</span>
+        <button id="close-pinned-btn" class="text-slate-500 hover:text-slate-300 text-lg leading-none">&times;</button>
+    </div>
+    <div id="pinned-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <p class="text-xs text-slate-500 text-center py-4">ピン留めされた結果はありません</p>
+    </div>
+</div>
+<!-- システムプロンプト編集 -->
+<div id="systemprompt-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm">
+                <i data-lucide="code-2" class="w-4 h-4 text-indigo-400"></i> システムプロンプト編集
+                <span class="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded px-2 py-0.5">上級者向け</span>
+            </h2>
+            <button id="close-systemprompt-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 flex flex-col flex-1 overflow-hidden space-y-3">
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <label class="text-xs text-slate-400 whitespace-nowrap">プリセット:</label>
+                <select id="sp-preset-select" class="flex-1 bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"></select>
+                <button id="sp-reset-btn" class="text-xs text-slate-500 hover:text-red-400 transition-colors flex items-center gap-1 flex-shrink-0 ml-2">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> リセット
+                </button>
+            </div>
+            <textarea id="sp-textarea" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-3 text-xs text-slate-200 font-mono resize-none focus:outline-none focus:border-indigo-500 min-h-[260px]" placeholder="システムプロンプトを編集..."></textarea>
+            <p class="text-[10px] text-slate-600 flex-shrink-0">※ 変更はlocalStorageに保存され、次回生成から適用されます。元に戻すには「リセット」を押してください。</p>
+            <div class="flex gap-2 flex-shrink-0">
+                <button id="sp-save-btn" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-xs font-medium transition-colors">保存して適用</button>
+                <button id="sp-reset-all-btn" class="px-4 py-2 border border-slate-700 hover:border-red-500/50 text-slate-400 hover:text-red-400 rounded-lg text-xs transition-colors">全プリセットをリセット</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 設定リセット -->
+<div id="reset-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-red-500/30 rounded-2xl w-full max-w-sm shadow-2xl">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm"><i data-lucide="alert-triangle" class="w-4 h-4 text-red-400"></i> 設定を選択してリセット</h2>
+            <button id="close-reset-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div class="space-y-2">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-neg" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">ネガティブプロンプト</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-color" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">カラーパレット</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-subjectdetail" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">被写体詳細エディター</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-camera-presets" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">カメラプリセット</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-snapshots" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">スナップショット</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-templates" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">テンプレート</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-history" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">生成履歴</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-stats" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">統計データ</span></label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="reset-systemprompts" class="accent-red-500 w-3.5 h-3.5"><span class="text-xs text-slate-300">カスタムシステムプロンプト</span></label>
+            </div>
+            <div class="flex gap-3">
+                <button id="select-all-reset-btn" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">全選択</button>
+                <button id="deselect-all-reset-btn" class="text-xs text-slate-500 hover:text-slate-300 transition-colors">全解除</button>
+            </div>
+            <button id="do-reset-btn" class="w-full bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                <i data-lucide="trash-2" class="w-4 h-4"></i> 選択した項目をリセット
+            </button>
+        </div>
+    </div>
+</div>
+<!-- シーンサジェスト -->
+<div id="scene-suggest-panel" class="bg-slate-800 border border-slate-600 rounded-b-lg shadow-xl overflow-hidden" style="display:none;position:absolute;left:0;right:0;z-index:50;top:100%"></div>
 </body>
 </html>
+
