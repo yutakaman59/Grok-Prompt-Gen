@@ -192,6 +192,10 @@
             <button id="open-reset-btn" title="設定を選択してリセット" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-red-500/50 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-red-400">
                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
             </button>
+            <button id="open-manual-btn" title="マニュアルを開く" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-grok-400">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">マニュアル</span>
+            </button>
             <button id="open-shortcut-header-btn" title="ショートカット一覧(?)" class="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs px-2 py-1.5 rounded-md transition-colors flex-shrink-0 text-slate-400 hover:text-slate-300">
                 <i data-lucide="keyboard" class="w-3.5 h-3.5"></i>
             </button>
@@ -5553,6 +5557,592 @@ document.addEventListener('DOMContentLoaded', init);
 </div>
 <!-- シーンサジェスト -->
 <div id="scene-suggest-panel" class="bg-slate-800 border border-slate-600 rounded-b-lg shadow-xl overflow-hidden" style="display:none;position:absolute;left:0;right:0;z-index:50;top:100%"></div>
+
+<!-- ===== マニュアルモーダル ===== -->
+<style id="manual-modal-style">
+
+  :root {
+    --grok: #14b8a6;
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #273548;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --amber: #f59e0b;
+    --purple: #a78bfa;
+    --red: #f87171;
+  }
+#manual-modal-inner * { box-sizing: border-box; margin: 0; padding: 0; }
+#manual-modal-inner body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.7; }
+#manual-modal-inner a { color: var(--grok); text-decoration: none; }
+#manual-modal-inner a:hover { text-decoration: underline; }
+#manual-modal-inner .wrapper { display: flex; min-height: 100vh; }
+#manual-modal-inner nav { width: 240px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 20px 0; }
+#manual-modal-inner nav .nav-logo { font-size: 13px; font-weight: 700; color: var(--grok); padding: 0 16px 16px; border-bottom: 1px solid var(--border); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+#manual-modal-inner nav ul { list-style: none; }
+#manual-modal-inner nav ul li a { display: block; padding: 5px 16px; font-size: 12px; color: var(--muted); border-left: 2px solid transparent; transition: all .15s; }
+#manual-modal-inner nav ul li a:hover { color: var(--text); border-left-color: var(--border); text-decoration: none; }
+#manual-modal-inner nav ul li.active > a { color: var(--grok); border-left-color: var(--grok); }
+#manual-modal-inner nav ul li.section > a { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #475569; cursor: default; padding-top: 14px; }
+#manual-modal-inner nav ul li.section > a:hover { color: #475569; border-left-color: transparent; }
+#manual-modal-inner main { flex: 1; padding: 40px 48px; max-width: 900px; }
+#manual-modal-inner h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+#manual-modal-inner h1 span { color: var(--grok); }
+#manual-modal-inner h2 { font-size: 20px; font-weight: 600; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; scroll-margin-top: 24px; }
+#manual-modal-inner h2 .icon { font-size: 18px; }
+#manual-modal-inner h3 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; color: #cbd5e1; }
+#manual-modal-inner p { margin-bottom: 10px; color: #cbd5e1; }
+#manual-modal-inner .hero { background: linear-gradient(135deg, rgba(20,184,166,.12), rgba(139,92,246,.08)); border: 1px solid rgba(20,184,166,.3); border-radius: 14px; padding: 28px 32px; margin-bottom: 32px; }
+#manual-modal-inner .hero p { color: var(--muted); margin: 8px 0 0; font-size: 14px; }
+#manual-modal-inner .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+#manual-modal-inner .badge { background: rgba(20,184,166,.15); border: 1px solid rgba(20,184,166,.3); color: var(--grok); border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 500; }
+#manual-modal-inner .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
+#manual-modal-inner .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+#manual-modal-inner .card .card-icon { font-size: 22px; margin-bottom: 8px; }
+#manual-modal-inner .card .card-title { font-size: 13px; font-weight: 600; color: var(--text); }
+#manual-modal-inner .card .card-desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+#manual-modal-inner table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+#manual-modal-inner th { background: var(--surface2); color: var(--muted); font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+#manual-modal-inner td { padding: 8px 12px; border: 1px solid var(--border); color: #cbd5e1; vertical-align: top; }
+#manual-modal-inner tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+#manual-modal-inner .steps { counter-reset: step; list-style: none; margin: 12px 0 20px; }
+#manual-modal-inner .steps li { counter-increment: step; display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+#manual-modal-inner .steps li::before { content: counter(step); background: var(--grok); color: #0f172a; font-weight: 700; font-size: 11px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+#manual-modal-inner .steps li span { color: #cbd5e1; font-size: 13px; }
+#manual-modal-inner kbd { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; font-family: monospace; font-size: 12px; color: var(--text); }
+#manual-modal-inner code { background: var(--surface2); border-radius: 4px; padding: 1px 5px; font-family: monospace; font-size: 12px; color: var(--grok); }
+#manual-modal-inner .tip { background: rgba(20,184,166,.08); border-left: 3px solid var(--grok); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 13px; color: #cbd5e1; }
+#manual-modal-inner .warn { background: rgba(245,158,11,.08); border-left: 3px solid var(--amber); border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 13px; color: #cbd5e1; }
+#manual-modal-inner .bar-demo { display: flex; gap: 8px; align-items: center; margin: 6px 0; font-size: 12px; }
+#manual-modal-inner .bar-demo .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+#manual-modal-inner footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+
+#manual-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(4px);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+#manual-modal.show { display: flex; }
+#manual-modal-box {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 1100px;
+  min-height: 80vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#manual-modal-close {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+#manual-modal-close span { font-size: 13px; font-weight: 600; color: #14b8a6; }
+#manual-modal-close button {
+  background: #334155;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: background .15s;
+}
+#manual-modal-close button:hover { background: #475569; color: #e2e8f0; }
+#manual-modal-inner {
+  flex: 1;
+  overflow-y: auto;
+}
+</style>
+
+<div id="manual-modal">
+  <div id="manual-modal-box">
+    <div id="manual-modal-close">
+      <span>⚡ Grok Prompt Gen — ユーザーマニュアル</span>
+      <button onclick="document.getElementById('manual-modal').classList.remove('show')">✕ 閉じる</button>
+    </div>
+    <div id="manual-modal-inner">
+      <div class="wrapper">
+
+<!-- サイドバー -->
+<nav>
+  <div class="nav-logo">⚡ Grok Prompt Gen</div>
+  <ul>
+    <li class="section"><a>はじめに</a></li>
+    <li><a href="#overview">アプリ概要</a></li>
+    <li><a href="#quickstart">クイックスタート</a></li>
+    <li class="section"><a>基本設定</a></li>
+    <li><a href="#apikey">APIキー管理</a></li>
+    <li><a href="#style">スタイルプリセット</a></li>
+    <li><a href="#camera">カメラ設定</a></li>
+    <li><a href="#subject">被写体プリセット</a></li>
+    <li><a href="#negative">ネガティブプロンプト</a></li>
+    <li><a href="#color">カラーパレット</a></li>
+    <li class="section"><a>生成・出力</a></li>
+    <li><a href="#generate">プロンプト生成</a></li>
+    <li><a href="#output">出力パネル</a></li>
+    <li><a href="#batch">バッチ生成</a></li>
+    <li><a href="#variation">バリエーション生成</a></li>
+    <li><a href="#random">ランダム生成</a></li>
+    <li><a href="#undo">Undo / Redo</a></li>
+    <li class="section"><a>履歴・管理</a></li>
+    <li><a href="#history">生成履歴</a></li>
+    <li><a href="#pin">ピン留め</a></li>
+    <li><a href="#compare">並列比較</a></li>
+    <li><a href="#qr">QRコード</a></li>
+    <li><a href="#template">プロンプトテンプレート</a></li>
+    <li><a href="#snapshot">設定スナップショット</a></li>
+    <li><a href="#camerapreset">カメラプリセット</a></li>
+    <li><a href="#export">エクスポート / インポート</a></li>
+    <li class="section"><a>分析・上級者向け</a></li>
+    <li><a href="#quality">品質スコア</a></li>
+    <li><a href="#aiimprove">AI改善提案</a></li>
+    <li><a href="#stats">統計</a></li>
+    <li><a href="#detail">被写体詳細エディター</a></li>
+    <li><a href="#sysprompt">システムプロンプト編集</a></li>
+    <li class="section"><a>その他</a></li>
+    <li><a href="#draft">下書き自動保存</a></li>
+    <li><a href="#reset">リセット</a></li>
+    <li><a href="#shortcuts">キーボードショートカット</a></li>
+    <li><a href="#models">対応モデル</a></li>
+  </ul>
+</nav>
+
+<!-- メインコンテンツ -->
+<main>
+
+  <!-- ヒーロー -->
+  <div class="hero">
+    <h1>Grok Prompt Gen <span>ユーザーマニュアル</span></h1>
+    <p>Gemini API を使って Grok Imagine 専用プロンプトを自動生成するシングルページWebアプリです。<br>サーバー不要 — すべてのデータはブラウザの <code>localStorage</code> に保存されます。</p>
+    <div class="badge-row">
+      <span class="badge">サーバー不要</span>
+      <span class="badge">Gemini API</span>
+      <span class="badge">Grok Imagine 最適化</span>
+      <span class="badge">ローカル保存</span>
+      <span class="badge">日本語対応</span>
+    </div>
+  </div>
+
+  <!-- アプリ概要 -->
+  <h2 id="overview"><span class="icon">📌</span> アプリ概要</h2>
+  <p>Grok Prompt Gen は「撮りたい写真のイメージ」を日本語で入力するだけで、Grok Imagine（画像生成AI）に最適化されたプロンプトを自動生成します。</p>
+  <div class="card-grid">
+    <div class="card"><div class="card-icon">⚡</div><div class="card-title">Grok Imagine用</div><div class="card-desc">最適化済み英語プロンプト（200〜350字）</div></div>
+    <div class="card"><div class="card-icon">🌐</div><div class="card-title">汎用英語</div><div class="card-desc">Flux など他の画像生成AIにも使える英語プロンプト</div></div>
+    <div class="card"><div class="card-icon">🇯🇵</div><div class="card-title">日本語</div><div class="card-desc">内容確認・学習用の日本語プロンプト</div></div>
+    <div class="card"><div class="card-icon">🧱</div><div class="card-title">JSON出力</div><div class="card-desc">全パラメータをJSON構造で出力。自動化に活用可能</div></div>
+  </div>
+
+  <!-- クイックスタート -->
+  <h2 id="quickstart"><span class="icon">🚀</span> クイックスタート</h2>
+  <ol class="steps">
+    <li><span><strong>Gemini APIキーを取得</strong> — <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> で無料取得</span></li>
+    <li><span><strong>APIキーを登録</strong> — ヘッダー右上の「🔑 API」ボタン → キー名と値を入力 → 追加</span></li>
+    <li><span><strong>スタイルを選ぶ</strong> — ヘッダー下のバー：Photorealism / Anime / Cinematic / Fantasy / Product</span></li>
+    <li><span><strong>プロンプトを入力</strong> — 左パネルのテキストエリアに「撮りたい写真のイメージ」を入力</span></li>
+    <li><span><strong>「生成」ボタンを押す</strong> — または <kbd>Ctrl</kbd>+<kbd>Enter</kbd>。数秒で右パネルに結果が表示されます</span></li>
+    <li><span><strong>コピーして使う</strong> — 「Grok Imagine」パネルのコピーボタン → Grok Imagine にペースト</span></li>
+  </ol>
+
+  <!-- APIキー管理 -->
+  <h2 id="apikey"><span class="icon">🔑</span> APIキー管理</h2>
+  <p>複数の Gemini API キーを登録でき、レート制限（429エラー）到達時に自動で次のキーへローテーションします。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>キーを追加</td><td>「API」ボタン → キー名（例：Key1）＋ APIキー値を入力 → 「追加」</td></tr>
+    <tr><td>アクティブキーを切り替え</td><td>キー一覧の「使用」ボタンをクリック</td></tr>
+    <tr><td>キーを削除</td><td>キー一覧のゴミ箱アイコン</td></tr>
+    <tr><td>レート制限の確認</td><td>ヘッダーのバー表示（0/5 件 / 60秒）でリアルタイム確認</td></tr>
+  </table>
+  <div class="tip">レート上限は <strong>5回 / 60秒</strong> です。すべてのキーが上限に達すると生成ボタンが自動で無効になります。カウントは60秒後に自動リセット。</div>
+
+  <!-- スタイルプリセット -->
+  <h2 id="style"><span class="icon">🎨</span> スタイルプリセット</h2>
+  <p>生成するプロンプトの大きな方向性を決めます。各プリセットはAIへのシステム指示が異なります。</p>
+  <table>
+    <tr><th>プリセット</th><th>用途・特徴</th></tr>
+    <tr><td><strong>Photorealism</strong></td><td>リアル写真風。スマホ撮影・CCD・フラッシュなどのカメラ描写に特化。Grok Imagine に最適化</td></tr>
+    <tr><td><strong>Anime</strong></td><td>アニメ・イラスト・NovelAI / Stable Diffusion 向けスタイル</td></tr>
+    <tr><td><strong>Cinematic</strong></td><td>映画的表現。アナモフィックレンズ・フィルムグレイン・シネマルック</td></tr>
+    <tr><td><strong>Fantasy</strong></td><td>ファンタジー・コンセプトアート。魔法・神話的景観</td></tr>
+    <tr><td><strong>Product</strong></td><td>商品撮影・EC向け。白背景・スタジオ照明・ハイライト</td></tr>
+  </table>
+
+  <!-- カメラ設定 -->
+  <h2 id="camera"><span class="icon">📷</span> カメラ設定（Photography Bar）</h2>
+  <p>ヘッダー下の2段目バーで撮影スタイルを細かく指定できます。設定は <code>localStorage</code> に自動保存されます。</p>
+  <table>
+    <tr><th>設定項目</th><th>説明</th><th>例</th></tr>
+    <tr><td>アスペクト比</td><td>生成する画像の縦横比</td><td>9:16（縦）/ 16:9（横）/ 1:1</td></tr>
+    <tr><td>シーン / 背景</td><td>撮影場所・環境</td><td>dim bedroom interior / 夜の路上 / 桜の公園</td></tr>
+    <tr><td>カメラスタイル</td><td>撮影機材・質感</td><td>スマホ自撮り / CCD撮影 / boudoir撮影</td></tr>
+    <tr><td>アングル</td><td>カメラ角度</td><td>アイレベル / 俯瞰 / 見上げ</td></tr>
+    <tr><td>ショットタイプ</td><td>画角・フレーミング</td><td>全身 / 上半身 / バストアップ / クローズアップ</td></tr>
+    <tr><td>ライティング</td><td>光源・照明スタイル</td><td>直接フラッシュ / 窓光 / 自然光（曇り）</td></tr>
+    <tr><td>被写界深度（DOF）</td><td>ピントの深さ</td><td>浅い（背景ぼかし）/ 深い（全体シャープ）</td></tr>
+  </table>
+
+  <!-- 被写体プリセット -->
+  <h2 id="subject"><span class="icon">👤</span> 被写体プリセット</h2>
+  <p>人物の外見情報を詳細に登録・管理できます。登録した被写体をメイン／サブに設定すると、生成時に自動的にプロンプトへ組み込まれます。</p>
+  <ol class="steps">
+    <li><span>左パネル上部の「👤 被写体」ボタンをクリック</span></li>
+    <li><span>「＋ 新規被写体」をクリック → 名前・年齢・ファッション・バイブ・顔・髪・体型・肌などを設定</span></li>
+    <li><span>「メインに設定」または「サブに設定」をクリック<br>メイン（琥珀色）= 主被写体、サブ（紫）= 2人目。両方設定すると2人構図プロンプトが生成されます</span></li>
+  </ol>
+  <h3>設定できる項目</h3>
+  <table>
+    <tr><th>カテゴリ</th><th>項目</th></tr>
+    <tr><td>基本</td><td>名前・年齢・ファッション・バイブ（クール / チアフル / 知的 など）</td></tr>
+    <tr><td>顔</td><td>顔メイク・目の形・顎のライン</td></tr>
+    <tr><td>髪</td><td>シルエット・バング・カラー</td></tr>
+    <tr><td>体型</td><td>フレーム・身長・バスト・ウエスト・ヒップ・肌色</td></tr>
+    <tr><td>自由記述</td><td>ほくろの位置・特徴など（プロンプトに自動追加）</td></tr>
+  </table>
+
+  <!-- ネガティブプロンプト -->
+  <h2 id="negative"><span class="icon">🚫</span> ネガティブプロンプト</h2>
+  <p>生成プロンプトに含めたくない要素を指定します。設定は <code>localStorage</code> に保存され、次回も維持されます。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>追加</td><td>テキスト入力 → <kbd>Enter</kbd> または「＋」ボタン</td></tr>
+    <tr><td>削除</td><td>チップの「×」ボタン</td></tr>
+    <tr><td>プリセットから追加</td><td>「よく使う ▼」トグル → watermark / extra fingers などのチップをクリック</td></tr>
+  </table>
+
+  <!-- カラーパレット -->
+  <h2 id="color"><span class="icon">🎨</span> カラーパレット</h2>
+  <p>生成プロンプトに含めたい色をスウォッチから最大3色まで選択できます。カラートーン（暖色・寒色・モノクロ・パステルなど）も合わせて指定できます。選択した色はプロンプト内の lighting / vibe 指示に反映されます。</p>
+  <div class="tip">カラーパレットと生成履歴の間に <strong>MD出力ボタン</strong>（Markdownレポートのダウンロード）があります。</div>
+
+  <!-- プロンプト生成 -->
+  <h2 id="generate"><span class="icon">⚡</span> プロンプト生成</h2>
+  <p>左パネル下部の「生成」ボタン（または <kbd>Ctrl</kbd>+<kbd>Enter</kbd>）でGemini APIを呼び出し、プロンプトを生成します。</p>
+  <ol class="steps">
+    <li><span>「撮りたい写真のイメージ」を日本語または英語で入力。被写体設定・カメラ設定が自動で組み合わされます</span></li>
+    <li><span>「生成」ボタンを押す。ローディング表示になり数秒で結果が右パネルに表示されます</span></li>
+    <li><span>レート制限（429）またはAPIエラーの場合は自動で次のキーに切り替えてリトライします</span></li>
+  </ol>
+
+  <!-- 出力パネル -->
+  <h2 id="output"><span class="icon">📋</span> 出力パネル</h2>
+  <p>生成結果は右パネルに表示されます。各ブロックにコピーボタンがあります。</p>
+  <table>
+    <tr><th>ブロック</th><th>内容</th><th>操作</th></tr>
+    <tr><td>AI解説</td><td>生成プロンプトの日本語解説</td><td>—</td></tr>
+    <tr><td>Grok Imagine</td><td>Grok Imagine用の最適化済み英語プロンプト（文字数バー付き）</td><td>コピー / QR / 比較 / ピン留め / Web共有</td></tr>
+    <tr><td>English Prompt</td><td>汎用英語プロンプト</td><td>コピー</td></tr>
+    <tr><td>Japanese Prompt</td><td>日本語プロンプト</td><td>コピー</td></tr>
+    <tr><td>JSON（grok_prompt.json）</td><td>全パラメータをJSON構造で出力</td><td>コピー</td></tr>
+  </table>
+  <h3>文字数バー（Grok Imagine）</h3>
+  <div class="bar-demo"><span class="dot" style="background:#22c55e"></span><span><strong>グリーン</strong>：0〜1200字 — 理想的な長さ</span></div>
+  <div class="bar-demo"><span class="dot" style="background:#f59e0b"></span><span><strong>アンバー</strong>：1200〜1800字 — やや長い</span></div>
+  <div class="bar-demo"><span class="dot" style="background:#ef4444"></span><span><strong>レッド</strong>：1800字以上 — 長すぎ（Grok Imagineが切り捨てる可能性あり）</span></div>
+
+  <!-- バッチ生成 -->
+  <h2 id="batch"><span class="icon">📦</span> バッチ生成</h2>
+  <p>同じ設定で複数のプロンプトを一度に生成します。ランダムボタンの右に「layers 3」ボタンとして表示されます。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>バッチ実行（3件）</td><td>「layers 3」ボタンをクリック または <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd></td></tr>
+    <tr><td>件数を5件に変更</td><td>バッチボタンを右クリック（3件↔5件をトグル）</td></tr>
+    <tr><td>結果の切り替え</td><td>出力パネル上部のタブ（1・2・3…）をクリック</td></tr>
+  </table>
+
+  <!-- バリエーション生成 -->
+  <h2 id="variation"><span class="icon">🌿</span> バリエーション生成</h2>
+  <p>直前の生成結果をベースに、追加の指示（差分テキスト）を加えて新しいプロンプトを生成します。一度生成した後に「バリエーション」ボタンが表示されます。</p>
+  <div class="tip">ショートカット：<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></div>
+
+  <!-- ランダム生成 -->
+  <h2 id="random"><span class="icon">🎲</span> ランダム生成</h2>
+  <p>被写体・服装・シーン・ポーズなどをランダムに抽選し、確認後に生成できます。</p>
+  <ol class="steps">
+    <li><span>「🎲」ボタンをクリック — ランダムプレビューパネルが表示され、抽選された内容が確認できます</span></li>
+    <li><span>「🔄 再抽選」で別の組み合わせを試す、または「⚡ この設定で生成」で生成を実行</span></li>
+  </ol>
+
+  <!-- Undo / Redo -->
+  <h2 id="undo"><span class="icon">↩️</span> Undo / Redo</h2>
+  <p>生成結果をスタックで管理し、前後の出力に移動できます。入力テキストも同時に復元されます。</p>
+  <table>
+    <tr><th>ショートカット</th><th>動作</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>1つ前の生成結果に戻る</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>1つ先の生成結果に進む</td></tr>
+  </table>
+  <p>左パネルの「Undo / Redo」ボタンでも操作できます。スタック残数が「Undo (2)」のように表示されます。</p>
+
+  <!-- 生成履歴 -->
+  <h2 id="history"><span class="icon">🕐</span> 生成履歴</h2>
+  <p>生成した結果は自動的に履歴に保存されます（最大30件）。</p>
+  <table>
+    <tr><th>機能</th><th>操作</th></tr>
+    <tr><td>履歴を再表示</td><td>履歴一覧のアイテムをクリック</td></tr>
+    <tr><td>お気に入り登録</td><td>アイテム左の ⭐ アイコン</td></tr>
+    <tr><td>絞り込みタブ</td><td>すべて / ⭐ / 写実 / Anime / 映画 でフィルタリング</td></tr>
+    <tr><td>検索</td><td>履歴上部の検索ボックスに入力</td></tr>
+    <tr><td>履歴をエクスポート</td><td>📥アイコン → JSON / CSV で書き出し</td></tr>
+    <tr><td>履歴を全削除</td><td>🗑アイコン</td></tr>
+  </table>
+
+  <!-- ピン留め -->
+  <h2 id="pin"><span class="icon">📌</span> ピン留め</h2>
+  <p>特に気に入った生成結果を「ピン留め」して常時アクセスできます。最大20件まで保存可能です。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>ピン留め</td><td>Grok Imagine パネルの「📌」ボタン（生成後に表示）</td></tr>
+    <tr><td>一覧表示</td><td>ヘッダーの「📌」ボタン（件数バッジ表示）</td></tr>
+    <tr><td>削除</td><td>ピン留め一覧の各アイテムのゴミ箱アイコン</td></tr>
+  </table>
+
+  <!-- 並列比較 -->
+  <h2 id="compare"><span class="icon">⚖️</span> 並列比較ビュー</h2>
+  <p>履歴から2件を選択して、プロンプト・スタイル・Grok Imagineテキストを左右に並べて比較できます。</p>
+  <ol class="steps">
+    <li><span>Grok Imagine パネルのヘッダーにある「⚖」ボタンをクリック</span></li>
+    <li><span>履歴から2件を選択（クリックでチェック。選択済みはハイライト）</span></li>
+    <li><span>「比較する」ボタンで左右に並べて表示</span></li>
+  </ol>
+
+  <!-- QRコード -->
+  <h2 id="qr"><span class="icon">📱</span> QRコード</h2>
+  <p>生成した Grok Imagine プロンプトをQRコードに変換して、スマートフォンで即座にスキャン・コピーできます。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>QR表示</td><td>Grok Imagine パネルの「QR」ボタン</td></tr>
+    <tr><td>Web共有</td><td>「共有」ボタン（Web Share API対応ブラウザのみ）</td></tr>
+  </table>
+
+  <!-- テンプレート -->
+  <h2 id="template"><span class="icon">📑</span> プロンプトテンプレート</h2>
+  <p>よく使う入力テキストをテンプレートとして保存できます（最大50件）。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>保存</td><td>左パネルの「テンプレ保存」ボタン → テンプレート名を入力 → 保存</td></tr>
+    <tr><td>読み込み</td><td>左パネルの「呼び出し」ボタン → テンプレート一覧から選択してクリック</td></tr>
+    <tr><td>削除</td><td>テンプレート一覧の🗑アイコン</td></tr>
+  </table>
+
+  <!-- スナップショット -->
+  <h2 id="snapshot"><span class="icon">📷</span> 設定スナップショット</h2>
+  <p>現在のすべての設定（スタイルプリセット・モデル・アスペクト比・カメラ設定・被写体設定・ネガティブプロンプト）を1つのスナップショットとして保存・復元できます（最大30件）。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>保存</td><td>左パネルの「スナップ」ボタン → スナップショット名を入力 → 「保存」</td></tr>
+    <tr><td>復元</td><td>スナップショット一覧のアイテムをクリック</td></tr>
+    <tr><td>削除</td><td>一覧の🗑アイコン</td></tr>
+  </table>
+
+  <!-- カメラプリセット -->
+  <h2 id="camerapreset"><span class="icon">🎬</span> カメラプリセット</h2>
+  <p>カメラ設定バーの値（スタイル・アングル・ショットタイプ・ライティング・DOF・シーン）を名前を付けて保存できます。スナップショットより軽量で、カメラ設定だけを素早く切り替えたい場合に便利です。</p>
+  <table>
+    <tr><th>操作</th><th>方法</th></tr>
+    <tr><td>保存</td><td>カメラ設定バー右端の「🔖」ボタン → 名前を入力 → 保存</td></tr>
+    <tr><td>適用</td><td>「🔖」ボタン右のプルダウンから選択</td></tr>
+    <tr><td>削除</td><td>カメラプリセット一覧の🗑アイコン</td></tr>
+  </table>
+
+  <!-- エクスポート / インポート -->
+  <h2 id="export"><span class="icon">📤</span> エクスポート / インポート</h2>
+  <h3>エクスポート</h3>
+  <table>
+    <tr><th>エクスポート対象</th><th>形式</th><th>操作</th></tr>
+    <tr><td>生成JSON</td><td>Markdown（.md）</td><td>カラーパレット〜生成履歴の間にある「MD出力」ボタン</td></tr>
+    <tr><td>生成履歴</td><td>JSON / CSV</td><td>履歴パネルの「📥」アイコン</td></tr>
+    <tr><td>被写体プリセット ＋ 履歴 ＋ カメラ設定</td><td>JSON（バックアップ）</td><td>被写体モーダル右上の「📥」ボタン</td></tr>
+  </table>
+  <h3>インポート</h3>
+  <table>
+    <tr><th>対象</th><th>操作</th></tr>
+    <tr><td>被写体 ＋ 履歴 ＋ カメラ設定</td><td>被写体モーダル右上の「📤（アップロード）」ボタン → JSONファイルを選択</td></tr>
+  </table>
+  <div class="tip">インポートは既存データとマージされます（重複タイムスタンプは除外）。</div>
+
+  <!-- 品質スコア -->
+  <h2 id="quality"><span class="icon">⭐</span> プロンプト品質スコア</h2>
+  <p>生成されたプロンプトを自動採点します（0〜100点）。採点は以下の5項目に基づきます。</p>
+  <table>
+    <tr><th>項目</th><th>最大点</th><th>評価基準</th></tr>
+    <tr><td>被写体の詳細度</td><td>25点</td><td>subject.description の文字数（144字で満点）</td></tr>
+    <tr><td>カメラ設定の具体性</td><td>20点</td><td>style / angle / shottype / lighting / depthoffield が埋まっているか</td></tr>
+    <tr><td>ネガティブプロンプト</td><td>15点</td><td>ネガティブ語句の数（30語で満点）</td></tr>
+    <tr><td>Grok Imagineプロンプト長</td><td>20点</td><td>800字以上で満点</td></tr>
+    <tr><td>スタイル・ムード指定</td><td>20点</td><td>composition / style / mood フィールドの有無</td></tr>
+  </table>
+
+  <!-- AI改善提案 -->
+  <h2 id="aiimprove"><span class="icon">🤖</span> AI改善提案</h2>
+  <p>生成後に「AI改善提案」ボタンを押すと、AIが現在のプロンプトをレビューして改善案を提示します。</p>
+  <ol class="steps">
+    <li><span>プロンプトを生成する（事前に生成が必要です）</span></li>
+    <li><span>左パネルの「AI改善提案」ボタンをクリック</span></li>
+    <li><span>モーダルが開き「AIが改善提案を生成中...」と表示されます</span></li>
+    <li><span>完了後、改善提案・改善後プロンプト（Grok Imagine / 英語 / 日本語 / JSON）が表示されます</span></li>
+    <li><span>「改善後テキストを入力欄に反映して再生成」ボタンで即座に適用できます</span></li>
+  </ol>
+  <table>
+    <tr><th>操作</th><th>説明</th></tr>
+    <tr><td>再生成</td><td>モーダル右上の「↻ 再生成」ボタンで別の改善案を取得</td></tr>
+    <tr><td>コピー</td><td>各プロンプトブロック右の「コピー」ボタンでクリップボードにコピー</td></tr>
+    <tr><td>適用して再生成</td><td>「改善後テキストを入力欄に反映して再生成」ボタンで自動適用＆生成</td></tr>
+  </table>
+  <div class="tip">AI改善提案は <strong>JSONスキーマなし（text/plain）</strong> でAPIを呼び出すため、通常の生成とは別枠でレート制限がかかります。</div>
+
+  <!-- 統計 -->
+  <h2 id="stats"><span class="icon">📊</span> 統計</h2>
+  <p><strong>生成履歴パネルのヘッダー右側</strong>にある「<code>bar-chart</code>（棒グラフ）アイコン」をクリックすると統計ダッシュボードが開きます。履歴エクスポートボタン（📥）の右隣にあります。</p>
+  <ul style="list-style:disc;padding-left:20px;color:#cbd5e1;font-size:13px;line-height:2;">
+    <li>累計の生成回数</li>
+    <li>直近7日間の生成数</li>
+    <li>プリセットごとの使用回数と割合</li>
+    <li>何時に生成が多いかの時間帯分布</li>
+  </ul>
+
+  <!-- 被写体詳細エディター -->
+  <h2 id="detail"><span class="icon">🖊</span> 被写体詳細エディター</h2>
+  <p>左パネルのカラーパレット右の「🖊」アイコンから開きます。ポーズ・服装・アクセサリー・背景などをより細かく直接記述できるフリーテキストエディターです。空欄の場合はプリセット値が使用されます。</p>
+
+  <!-- システムプロンプト編集 -->
+  <h2 id="sysprompt"><span class="icon">💻</span> システムプロンプト編集（上級者向け）</h2>
+  <p>ヘッダーの「&lt;/&gt;」ボタンから各スタイルプリセットのシステムプロンプト（AIへの指示）を直接編集できます。変更は <code>localStorage</code> に保存され、元に戻したい場合は「リセット」ボタンを押します。</p>
+  <div class="warn">システムプロンプトを誤って編集すると、生成品質が大幅に低下する可能性があります。「リセット」ボタンでいつでも初期値に戻せます。</div>
+
+  <!-- 下書き自動保存 -->
+  <h2 id="draft"><span class="icon">💾</span> 下書き自動保存</h2>
+  <p>テキストエリアへの入力は2秒ごとに自動的に <code>localStorage</code> へ下書き保存されます。ブラウザを閉じても次回アクセス時に「前回の下書きがあります」バーが表示され、復元できます。</p>
+
+  <!-- リセット -->
+  <h2 id="reset"><span class="icon">🔄</span> リセット</h2>
+  <p>ヘッダーの「↺」ボタンから、各種データを個別または一括でリセットできます。</p>
+  <table>
+    <tr><th>リセット対象</th><th>説明</th></tr>
+    <tr><td>ネガティブプロンプト</td><td>登録済みNGワードをすべて削除</td></tr>
+    <tr><td>カラーパレット</td><td>選択色・トーンをクリア</td></tr>
+    <tr><td>被写体詳細</td><td>詳細エディターの内容をクリア</td></tr>
+    <tr><td>カメラプリセット</td><td>保存済みカメラプリセットをすべて削除</td></tr>
+    <tr><td>スナップショット</td><td>保存済みスナップショットをすべて削除</td></tr>
+    <tr><td>テンプレート</td><td>保存済みプロンプトテンプレートをすべて削除</td></tr>
+    <tr><td>生成履歴</td><td>履歴を全削除</td></tr>
+    <tr><td>統計</td><td>生成統計をリセット</td></tr>
+    <tr><td>システムプロンプト</td><td>編集済みシステムプロンプトを初期値に戻す</td></tr>
+  </table>
+
+  <!-- キーボードショートカット -->
+  <h2 id="shortcuts"><span class="icon">⌨️</span> キーボードショートカット</h2>
+  <p>ヘッダーの「⌨」ボタンまたは <kbd>?</kbd> キーでショートカット一覧モーダルを表示できます。</p>
+  <table>
+    <tr><th>ショートカット</th><th>動作</th></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>プロンプト生成</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd></td><td>バリエーション生成</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></td><td>Grok Imagine プロンプトをコピー</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd></td><td>バッチ生成</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo（前の生成結果へ）</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo（次の生成結果へ）</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>開いているモーダルを閉じる</td></tr>
+    <tr><td><kbd>?</kbd></td><td>ショートカット一覧を表示</td></tr>
+  </table>
+
+  <!-- 対応モデル -->
+  <h2 id="models"><span class="icon">🧠</span> 対応モデル</h2>
+  <p>ヘッダーのモデル選択プルダウンから使用するGeminiモデルを切り替えられます。</p>
+  <table>
+    <tr><th>モデル</th><th>特徴</th></tr>
+    <tr><td><strong>gemini-2.5-flash-lite</strong></td><td>最も高速・低コスト。通常用途に最適（デフォルト推奨）</td></tr>
+    <tr><td><strong>gemini-2.5-flash</strong></td><td>高速かつ高品質のバランス型</td></tr>
+    <tr><td><strong>gemini-2.5-pro</strong></td><td>最高品質。複雑な被写体・詳細な指示に対応</td></tr>
+    <tr><td><strong>gemini-2.0-flash</strong></td><td>安定版の高速モデル</td></tr>
+    <tr><td><strong>gemini-2.0-flash-lite</strong></td><td>2.0系の最軽量モデル</td></tr>
+  </table>
+  <div class="tip">品質重視なら <strong>gemini-2.5-pro</strong>、コストを抑えたい場合は <strong>gemini-2.5-flash-lite</strong> をお使いください。</div>
+
+  <footer>
+    <p>Grok Prompt Gen — ユーザーマニュアル</p>
+    <p style="margin-top:4px;">すべてのデータはブラウザ内（localStorage）にのみ保存されます。</p>
+  </footer>
+
+</main>
+</div>
+
+<script>
+// アクティブリンクのハイライト
+const sections = document.querySelectorAll('h2[id]');
+const navLinks = document.querySelectorAll('nav ul li a[href^="#"]');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(a => a.parentElement.classList.remove('active'));
+      const link = document.querySelector('nav a[href="#' + entry.target.id + '"]');
+      if (link) link.parentElement.classList.add('active');
+    }
+  });
+}, { rootMargin: '-10% 0px -80% 0px' });
+sections.forEach(s => observer.observe(s));
+
+// マニュアルボタン
+(function(){
+  var btn = document.getElementById('open-manual-btn');
+  if (btn) btn.addEventListener('click', function(){
+    document.getElementById('manual-modal').classList.add('show');
+    // IntersectionObserver を再起動
+    var inner = document.getElementById('manual-modal-inner');
+    if (inner) {
+      var sections = inner.querySelectorAll('h2[id]');
+      var navLinks = inner.querySelectorAll('nav ul li a[href^="#"]');
+      if (sections.length && navLinks.length) {
+        var obs = new IntersectionObserver(function(entries){
+          entries.forEach(function(entry){
+            if (entry.isIntersecting) {
+              navLinks.forEach(function(a){ a.parentElement.classList.remove('active'); });
+              var link = inner.querySelector('nav a[href="#' + entry.target.id + '"]');
+              if (link) link.parentElement.classList.add('active');
+            }
+          });
+        }, { root: inner, rootMargin: '-10% 0px -80% 0px' });
+        sections.forEach(function(s){ obs.observe(s); });
+      }
+      // ナビリンクのスクロール
+      navLinks.forEach(function(a){
+        a.addEventListener('click', function(e){
+          e.preventDefault();
+          var target = inner.querySelector(a.getAttribute('href'));
+          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+    }
+    lucide.createIcons();
+  });
+  // モーダル背景クリックで閉じる
+  var modal = document.getElementById('manual-modal');
+  if (modal) modal.addEventListener('click', function(e){
+    if (e.target === modal) modal.classList.remove('show');
+  });
+})();
+
+</script>
+    </div>
+  </div>
+</div>
 </body>
 </html>
 
