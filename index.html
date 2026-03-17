@@ -138,6 +138,27 @@
         .suggest-item{cursor:pointer;padding:6px 12px;font-size:12px;color:#cbd5e1;transition:background .1s}
         .suggest-item:hover{background:rgba(20,184,166,.15);color:#14b8a6}
     </style>
+<script>
+(function(){
+  try{
+    localStorage.setItem("__shimtest__","1");
+    localStorage.removeItem("__shimtest__");
+  } catch(e){
+    var _mem={};
+    var shimLS={
+      getItem:function(k){return Object.prototype.hasOwnProperty.call(_mem,k)?_mem[k]:null;},
+      setItem:function(k,v){_mem[k]=String(v);},
+      removeItem:function(k){delete _mem[k];},
+      clear:function(){_mem={};},
+      key:function(i){return Object.keys(_mem)[i]||null;}
+    };
+    Object.defineProperty(shimLS,"length",{get:function(){return Object.keys(_mem).length;}});
+    try{ Object.defineProperty(window,"localStorage",{value:shimLS,writable:false,configurable:false}); }
+    catch(e2){ window.localStorage=shimLS; }
+    console.warn("[localStorage shim] in-memory mode");
+  }
+})();
+</script>
 </head>
 <body class="bg-slate-900 text-slate-200 font-sans min-h-screen flex flex-col selection:bg-grok-500 selection:text-white">
 
@@ -3160,6 +3181,7 @@ function buildResponseSchema() {
 
 // ===================== メイン生成フロー =====================
 async function handleGenerate() {
+    _aiImproveRawText = ''; _aiImprovedPrompts = { imagine: '', en: '', ja: '', json: '' };
     _aiImproveRawText=''; _aiImprovedPrompts={imagine:'',en:'',ja:'',json:''};
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
@@ -4743,79 +4765,51 @@ let _aiImproveRawText = '';
 let _aiImprovedPrompts = { imagine: '', en: '', ja: '', json: '' };
 
 function renderAiImproveContent(text) {
-    const suggEl    = document.getElementById('ai-improve-suggestions');
-    const suggList  = document.getElementById('ai-improve-sugg-list');
-    const promptsEl = document.getElementById('ai-improve-prompts');
-    const actions   = document.getElementById('ai-improve-actions');
+    var suggEl    = document.getElementById('ai-improve-suggestions');
+    var suggList  = document.getElementById('ai-improve-sugg-list');
+    var promptsEl = document.getElementById('ai-improve-prompts');
+    var actions   = document.getElementById('ai-improve-actions');
     if (!suggEl) return;
-    // 改善提案セクション
-    const suggSection = text.match(/##\s*改善提案[\s\S]*?(?=##\s*(?:Grok|英語|日本語|JSON|改善後)|$)/)?.[0] || '';
-    const suggLines   = suggSection.split('\n').filter(l => l.trim() && !l.startsWith('##'));
+    var sect = text.match(/##\s*\u6539\u5584\u63d0\u6848[\s\S]*?(?=\n##|$)/);
+    var suggSection = sect ? sect[0] : '';
+    var suggLines = suggSection.split('\n').filter(function(l){ return l.trim() && !l.startsWith('##'); });
     if (suggLines.length > 0 && suggList) {
-        suggList.innerHTML = suggLines.map((line, idx) => {
-            const cl = escapeHtml(line.replace(/^[-・*]\s*/, '').trim());
-            if (!cl) return '';
-            return `<div class="flex items-start gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 group">`
-                 + `<span class="text-purple-400 text-xs mt-0.5 flex-shrink-0">·</span>`
-                 + `<span class="text-xs text-slate-300 flex-1 leading-relaxed ai-sugg-text">${cl}</span>`
-                 + `<button data-copy-idx="${idx}" title="コピー" class="ai-copy-btn flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-grok-400 p-0.5 rounded ml-1">`
-                 + `<i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div>`;
+        suggList.innerHTML = suggLines.map(function(line){
+            var cl = escapeHtml(line.replace(/^[-\u30fb*]\s*/, '').trim());
+            return cl ? '<div class="flex items-start gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2"><span class="text-purple-400 text-xs mr-1">&middot;</span><span class="text-xs text-slate-300">' + cl + '</span></div>' : '';
         }).join('');
         suggEl.classList.remove('hidden');
     }
-    // 4種プロンプト抽出
-    const extract = (tag) => {
-        const m = text.match(new RegExp('##\\s*' + tag + '\\s*\\n([\\s\\S]+?)(?=\\n##\\s|$)'));
+    function extract(tag) {
+        var esc = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        var m = text.match(new RegExp('##\\s*' + esc + '[^\\n]*\\n([\\s\\S]+?)(?=\\n##|$)'));
         return m ? m[1].trim() : '';
-    };
-    const imagine = extract('Grok Imagine');
-    const en      = extract('英語プロンプト');
-    const ja      = extract('日本語プロンプト');
-    const json    = extract('JSONプロンプト');
-    _aiImprovedPrompts = { imagine, en, ja, json };
-    const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+    }
+    var imagine = extract('Grok Imagine');
+    var en      = extract('\u82f1\u8a9e\u30d7\u30ed\u30f3\u30d7\u30c8');
+    var ja      = extract('\u65e5\u672c\u8a9e\u30d7\u30ed\u30f3\u30d7\u30c8');
+    var jsn     = extract('JSON\u30d7\u30ed\u30f3\u30d7\u30c8');
+    _aiImprovedPrompts = { imagine: imagine, en: en, ja: ja, json: jsn };
+    function setEl(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
     setEl('ai-out-imagine', imagine);
     setEl('ai-out-en',      en);
     setEl('ai-out-ja',      ja);
-    setEl('ai-out-json',    json);
-    if (imagine || en || ja || json) {
-        if (promptsEl) promptsEl.classList.remove('hidden');
-    }
-    // 入力テキスト反映用
-    const applyM = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
-    if (applyM) {
-        _aiImproveText = applyM[1].trim().split('\n')[0].trim();
-        if (actions) actions.classList.remove('hidden');
-    } else if (ja) {
-        _aiImproveText = ja;
-        if (actions) actions.classList.remove('hidden');
-    }
-    // 提案の個別コピーボタン
-    if (suggList) suggList.querySelectorAll('.ai-copy-btn').forEach(btn => {
-        btn.addEventListener('click', e => {
-            e.stopPropagation();
-            const rows = suggList.querySelectorAll('.ai-sugg-text');
-            const ct = rows[parseInt(btn.dataset.copyIdx)]?.textContent.trim() || '';
+    jsn = jsn.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+    setEl('ai-out-json',    jsn);
+    if (imagine || en || ja || jsn) { if (promptsEl) promptsEl.classList.remove('hidden'); }
+    var applyM = text.match(/##\s*\u6539\u5584\u5f8c\u306e\u5165\u529b\u30c6\u30ad\u30b9\u30c8[^\n]*\n([\s\S]+)/);
+    if (applyM) { _aiImproveText = applyM[1].trim().split('\n')[0].trim(); if (actions) actions.classList.remove('hidden'); }
+    else if (ja) { _aiImproveText = ja; if (actions) actions.classList.remove('hidden'); }
+    document.querySelectorAll('.ai-prompt-copy-btn').forEach(function(btn) {
+        btn.onclick = function() {
+            var el = document.getElementById(btn.dataset.target);
+            var ct = el ? el.textContent.trim() : '';
             if (!ct) return;
-            navigator.clipboard.writeText(ct).catch(()=>{});
-            const icon = btn.querySelector('i');
-            if (icon) { icon.setAttribute('data-lucide','check'); lucide.createIcons(); }
-            btn.classList.add('!opacity-100'); btn.style.color='#14b8a6';
-            setTimeout(()=>{ if(icon){icon.setAttribute('data-lucide','copy');lucide.createIcons();} btn.classList.remove('!opacity-100'); btn.style.color=''; },1500);
-        });
-    });
-    // 4種プロンプトのコピーボタン
-    document.querySelectorAll('.ai-prompt-copy-btn').forEach(btn => {
-        btn.addEventListener('click', e => {
-            e.stopPropagation();
-            const ct = document.getElementById(btn.dataset.target)?.textContent.trim() || '';
-            if (!ct) return;
-            navigator.clipboard.writeText(ct).catch(()=>{});
-            const icon = btn.querySelector('i');
-            if (icon) { icon.setAttribute('data-lucide','check'); lucide.createIcons(); }
-            btn.style.color='#14b8a6';
-            setTimeout(()=>{ if(icon){icon.setAttribute('data-lucide','copy');lucide.createIcons();} btn.style.color=''; },1500);
-        });
+            if (navigator.clipboard) navigator.clipboard.writeText(ct).then(function(){
+                var orig = btn.textContent; btn.textContent = '\u2713';
+                setTimeout(function(){ btn.textContent = orig; }, 1200);
+            }).catch(function(){});
+        };
     });
     lucide.createIcons();
 }
@@ -4823,91 +4817,103 @@ function renderAiImproveContent(text) {
 let _aiImproveText = '';
 
 function initAiImprove() {
-    const btn=document.getElementById('ai-improve-btn'), closeBtn=document.getElementById('close-ai-improve-btn'),
-          rerunBtn=document.getElementById('rerun-ai-improve-btn'), applyBtn=document.getElementById('apply-ai-improve-btn'),
-          modal=document.getElementById('ai-improve-modal');
-    if (btn) btn.addEventListener('click', () => {
+    var btn      = document.getElementById('ai-improve-btn');
+    var closeBtn = document.getElementById('close-ai-improve-btn');
+    var rerunBtn = document.getElementById('rerun-ai-improve-btn');
+    var applyBtn = document.getElementById('apply-ai-improve-btn');
+    var modal    = document.getElementById('ai-improve-modal');
+    if (btn) btn.addEventListener('click', function() {
         if (_aiImproveRawText) {
-            modal?.classList.add('show');
+            if (modal) modal.classList.add('show');
             renderAiImproveContent(_aiImproveRawText);
             if (rerunBtn) rerunBtn.classList.remove('hidden');
             lucide.createIcons();
         } else { runAiImprove(); }
     });
-    if (rerunBtn) rerunBtn.addEventListener('click', () => { _aiImproveRawText=''; runAiImprove(); });
-    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
-    if (modal) modal.addEventListener('click', e => { if(e.target===modal) modal.classList.remove('show'); });
-    if (applyBtn) applyBtn.addEventListener('click', () => {
+    if (rerunBtn) rerunBtn.addEventListener('click', function() { _aiImproveRawText = ''; runAiImprove(); });
+    if (closeBtn) closeBtn.addEventListener('click', function() { if (modal) modal.classList.remove('show'); });
+    if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) modal.classList.remove('show'); });
+    if (applyBtn) applyBtn.addEventListener('click', function() {
         if (_aiImproveText && els.promptInput) {
             els.promptInput.value = _aiImproveText;
-            modal?.classList.remove('show');
-            document.getElementById('generate-btn')?.click();
+            if (modal) modal.classList.remove('show');
+            var gb = document.getElementById('generate-btn'); if (gb) gb.click();
         }
     });
 }
 
 async function runAiImprove() {
-    if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
-    const keys = getApiKeys(); if (!keys.length) { showError('APIキーを登録してください。'); return; }
-    const modal=document.getElementById('ai-improve-modal'),
-          loading=document.getElementById('ai-improve-loading'),
-          suggEl=document.getElementById('ai-improve-suggestions'),
-          suggList=document.getElementById('ai-improve-sugg-list'),
-          promptsEl=document.getElementById('ai-improve-prompts'),
-          actions=document.getElementById('ai-improve-actions'),
-          rerunBtn=document.getElementById('rerun-ai-improve-btn');
-    modal?.classList.add('show'); lucide.createIcons();
-    if (loading)   { loading.classList.remove('hidden'); loading.style.display='flex'; }
-    if (suggEl)    suggEl.classList.add('hidden');
-    if (suggList)  suggList.innerHTML = '';
-    if (promptsEl) promptsEl.classList.add('hidden');
-    if (actions)   actions.classList.add('hidden');
-    if (rerunBtn)  rerunBtn.classList.add('hidden');
-    _aiImproveRawText = ''; _aiImprovedPrompts = { imagine:'', en:'', ja:'', json:'' };
-    const qualResult = calcQualityScore(outputData);
-    const lowItems = qualResult?.details.filter(d=>!d.ok).map(d=>`・${d.label}（${d.score}/${d.max}点）`).join('\n')||'（なし）';
-    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。
-以下の現在の生成結果を分析して改善してください。
-
-【現在の入力テキスト】
-${els.promptInput?.value||''}
-
-【現在のJSON】
-${JSON.stringify(outputData.json,null,2).slice(0,1500)}
-
-【スコアが低い項目】
-${lowItems}
-
-以下の形式で厳密に出力してください（各セクションのタイトルは必ず ## で始める）:
-
-## 改善提案
-- （日本語で改善ポイント3〜5点）
-
-## Grok Imagine
-（改善後のGrok Imagineプロンプト全文・英語）
-
-## 英語プロンプト
-（改善後の英語プロンプト全文）
-
-## 日本語プロンプト
-（改善後の日本語プロンプト全文）
-
-## JSONプロンプト
-（改善後のgrok_prompt_json JSON・コードブロックなし）
-
-## 改善後の入力テキスト
-（日本語100文字以内）`;
+    if (!outputData || !outputData.json) { showError('\u5148\u306b\u30d7\u30ed\u30f3\u30d7\u30c8\u3092\u751f\u6210\u3057\u3066\u304f\u3060\u3055\u3044\u3002'); return; }
+    var keys = getApiKeys();
+    if (!keys || !keys.length) { showError('API\u30ad\u30fc\u3092\u767b\u9332\u3057\u3066\u304f\u3060\u3055\u3044\u3002'); return; }
+    var modal    = document.getElementById('ai-improve-modal');
+    var loading  = document.getElementById('ai-improve-loading');
+    var suggEl   = document.getElementById('ai-improve-suggestions');
+    var suggList = document.getElementById('ai-improve-sugg-list');
+    var promptsEl= document.getElementById('ai-improve-prompts');
+    var actions  = document.getElementById('ai-improve-actions');
+    var rerunBtn = document.getElementById('rerun-ai-improve-btn');
+    if (modal)    modal.classList.add('show');
+    lucide.createIcons();
+    if (loading)  { loading.classList.remove('hidden'); loading.style.display = 'flex'; }
+    if (suggEl)   suggEl.classList.add('hidden');
+    if (suggList) suggList.innerHTML = '';
+    if (promptsEl)promptsEl.classList.add('hidden');
+    if (actions)  actions.classList.add('hidden');
+    if (rerunBtn) rerunBtn.classList.add('hidden');
+    _aiImproveRawText = '';
+    _aiImprovedPrompts = { imagine: '', en: '', ja: '', json: '' };
+    var qualResult = calcQualityScore(outputData);
+    var lowItems = (qualResult && qualResult.details)
+        ? qualResult.details.filter(function(d){ return !d.ok; }).map(function(d){ return d.label; }).join(', ')
+        : '(none)';
+    var promptBody =
+        '\u3042\u306a\u305f\u306fGrok Imagine\u30d7\u30ed\u30f3\u30d7\u30c8\u306e\u5c02\u9580\u5bb6\u3067\u3059\u3002\u4ee5\u4e0b\u3092\u5206\u6790\u3057\u3066\u6539\u5584\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n\n' +
+        '[\u73fe\u5728\u306e\u5165\u529b]\n' + (els.promptInput ? els.promptInput.value : '') + '\n\n' +
+        '[\u73fe\u5728\u306eJSON]\n' + JSON.stringify(outputData.json, null, 2).slice(0, 1500) + '\n\n' +
+        '[\u30b9\u30b3\u30a2\u4f4e\u9805\u76ee]\n' + lowItems + '\n\n' +
+        '\u4ee5\u4e0b\u306e\u5f62\u5f0f\u3067\u5fc5\u305a\u51fa\u529b\uff08##\u30bf\u30a4\u30c8\u30eb\u306f\u7d76\u5bfe\u306b\u5909\u3048\u306a\u3044\u3053\u3068\uff09:\n\n' +
+        '## \u6539\u5584\u63d0\u6848\n- (3\u301c5\u70b9)\n\n' +
+        '## Grok Imagine\n(\u6539\u5584\u5f8c\u306e\u82f1\u8a9e\u30d7\u30ed\u30f3\u30d7\u30c8)\n\n' +
+        '## \u82f1\u8a9e\u30d7\u30ed\u30f3\u30d7\u30c8\n(\u6539\u5584\u5f8c)\n\n' +
+        '## \u65e5\u672c\u8a9e\u30d7\u30ed\u30f3\u30d7\u30c8\n(\u6539\u5584\u5f8c)\n\n' +
+        '## JSON\u30d7\u30ed\u30f3\u30d7\u30c8\n(\u6539\u5584\u5f8c\u306eJSON)\n\n' +
+        '## \u6539\u5584\u5f8c\u306e\u5165\u529b\u30c6\u30ad\u30b9\u30c8\n(100\u6587\u5b57\u4ee5\u5185)';
+    async function fetchPlainText(apiKey, model) {
+        var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+        var res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: promptBody }] }],
+                generationConfig: { responseMimeType: 'text/plain', maxOutputTokens: 2048 }
+            })
+        });
+        if (!res.ok) { var e = await res.json().catch(function(){ return {}; }); throw new Error((e.error && e.error.message) || 'HTTP ' + res.status); }
+        var d = await res.json();
+        var p = d && d.candidates && d.candidates[0] && d.candidates[0].content && d.candidates[0].content.parts;
+        return (p && p[0]) ? p[0].text : '';
+    }
     try {
-        const responseData = await fetchWithKeyRotation(improvePrompt);
-        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
+        var activeIdx = getActiveKeyIndex();
+        var allKeys   = getApiKeys();
+        var modelName = els.modelSelect ? els.modelSelect.value : 'gemini-2.0-flash';
+        var text = ''; var lastErr = '';
+        for (var r = 0; r < allKeys.length; r++) {
+            var ki = (activeIdx + r) % allKeys.length;
+            if (getKeyRateLimitCount(ki) >= MAX_REQUESTS) continue;
+            try { text = await fetchPlainText(allKeys[ki].value, modelName); recordKeyRequest(ki); break; }
+            catch(e) { lastErr = e.message; }
+        }
+        if (!text) throw new Error(lastErr || 'API\u30a8\u30e9\u30fc');
         _aiImproveRawText = text;
         renderAiImproveContent(text);
         if (rerunBtn) rerunBtn.classList.remove('hidden');
-    } catch(e) {
-        if (suggList) { suggList.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`; }
+    } catch(err) {
+        if (suggList) suggList.innerHTML = '<p class="text-xs text-red-400">\u30a8\u30e9\u30fc: ' + escapeHtml(err.message) + '</p>';
         if (suggEl) suggEl.classList.remove('hidden');
     } finally {
-        if (loading) { loading.classList.add('hidden'); loading.style.display='none'; }
+        if (loading) { loading.classList.add('hidden'); loading.style.display = 'none'; }
         lucide.createIcons();
     }
 }
@@ -5419,62 +5425,58 @@ document.addEventListener('DOMContentLoaded', init);
 
 <!-- AI改善提案 -->
 <div id="ai-improve-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
-            <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm"><i data-lucide="wand-2" class="w-4 h-4 text-purple-400"></i> AI改善提案</h2>
-            <div class="flex items-center gap-2">
-                <button id="rerun-ai-improve-btn" class="hidden text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> 再生成</button>
-                <button id="close-ai-improve-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
-            </div>
-        </div>
-        <div class="p-5 flex-1 overflow-y-auto space-y-4">
-            <div id="ai-improve-loading" class="hidden items-center gap-3 text-slate-400 text-sm py-8 justify-center">
-                <i data-lucide="loader-2" class="w-5 h-5 spinner text-purple-400"></i> AIが改善提案を生成中...
-            </div>
-            <!-- 改善提案リスト -->
-            <div id="ai-improve-suggestions" class="hidden">
-                <p class="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="lightbulb" class="w-3 h-3"></i> 改善提案</p>
-                <div id="ai-improve-sugg-list" class="space-y-1.5"></div>
-            </div>
-            <!-- 4種プロンプト -->
-            <div id="ai-improve-prompts" class="hidden space-y-3">
-                <p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="pen-line" class="w-3 h-3"></i> 改善後のプロンプト</p>
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
-                        <span class="text-[10px] font-semibold text-grok-400 flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Grok Imagine</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-imagine" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-grok-400 transition-colors pointer-events-none"></i></button>
-                    </div>
-                    <p id="ai-out-imagine" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
-                </div>
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
-                        <span class="text-[10px] font-semibold text-blue-400 flex items-center gap-1"><i data-lucide="languages" class="w-3 h-3"></i> 英語プロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-en" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-blue-400 transition-colors pointer-events-none"></i></button>
-                    </div>
-                    <p id="ai-out-en" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
-                </div>
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
-                        <span class="text-[10px] font-semibold text-emerald-400 flex items-center gap-1"><i data-lucide="type" class="w-3 h-3"></i> 日本語プロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-ja" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-emerald-400 transition-colors pointer-events-none"></i></button>
-                    </div>
-                    <p id="ai-out-ja" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
-                </div>
-                <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
-                    <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
-                        <span class="text-[10px] font-semibold text-orange-400 flex items-center gap-1"><i data-lucide="braces" class="w-3 h-3"></i> JSONプロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-json" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-orange-400 transition-colors pointer-events-none"></i></button>
-                    </div>
-                    <pre id="ai-out-json" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed overflow-x-auto whitespace-pre-wrap"></pre>
-                </div>
-            </div>
-            <div id="ai-improve-actions" class="hidden pt-1">
-                <button id="apply-ai-improve-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
-                    <i data-lucide="zap" class="w-3.5 h-3.5"></i> 改善後テキストを入力欄に反映して再生成
-                </button>
-            </div>
-        </div>
+<div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
+    <h2 class="font-semibold text-slate-200 text-sm">✨ AI改善提案</h2>
+    <div class="flex items-center gap-2">
+      <button id="rerun-ai-improve-btn" class="hidden text-purple-400 hover:text-purple-300 bg-purple-500/10 border border-purple-500/30 px-2 py-1 rounded-lg text-xs font-medium">↻ 再生成</button>
+      <button id="close-ai-improve-btn" class="text-slate-500 hover:text-slate-300 text-xl leading-none px-1">&times;</button>
     </div>
+  </div>
+  <div class="p-5 flex-1 overflow-y-auto space-y-4">
+    <div id="ai-improve-loading" class="hidden items-center gap-3 text-slate-400 text-sm py-8 justify-center">
+      <i data-lucide="loader-2" class="w-5 h-5 spinner text-purple-400"></i> AIが改善提案を生成中...
+    </div>
+    <div id="ai-improve-suggestions" class="hidden">
+      <p class="text-xs font-semibold text-purple-400 mb-2">◆ 改善提案</p>
+      <div id="ai-improve-sugg-list" class="space-y-1.5"></div>
+    </div>
+    <div id="ai-improve-prompts" class="hidden space-y-3">
+      <p class="text-xs font-semibold text-amber-400 mb-1">◆ 改善後のプロンプト</p>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
+          <span class="text-xs font-semibold text-grok-400">Grok Imagine</span>
+          <button class="ai-prompt-copy-btn text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-700" data-target="ai-out-imagine">コピー</button>
+        </div>
+        <p id="ai-out-imagine" class="text-xs text-slate-300 px-3 py-2.5 whitespace-pre-wrap"></p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
+          <span class="text-xs font-semibold text-blue-400">英語プロンプト</span>
+          <button class="ai-prompt-copy-btn text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-700" data-target="ai-out-en">コピー</button>
+        </div>
+        <p id="ai-out-en" class="text-xs text-slate-300 px-3 py-2.5 whitespace-pre-wrap"></p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
+          <span class="text-xs font-semibold text-emerald-400">日本語プロンプト</span>
+          <button class="ai-prompt-copy-btn text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-700" data-target="ai-out-ja">コピー</button>
+        </div>
+        <p id="ai-out-ja" class="text-xs text-slate-300 px-3 py-2.5 whitespace-pre-wrap"></p>
+      </div>
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
+          <span class="text-xs font-semibold text-orange-400">JSONプロンプト</span>
+          <button class="ai-prompt-copy-btn text-xs text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-700" data-target="ai-out-json">コピー</button>
+        </div>
+        <pre id="ai-out-json" class="text-xs text-slate-300 px-3 py-2.5 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+    <div id="ai-improve-actions" class="hidden pt-1">
+      <button id="apply-ai-improve-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-xs font-medium">改善後テキストを入力欄に反映して再生成</button>
+    </div>
+  </div>
+</div>
 </div>
 <!-- ピン留めパネル -->
 <div id="pinned-panel" class="fixed top-16 right-4 z-[150] bg-slate-900 border border-amber-500/30 rounded-2xl shadow-2xl w-80 max-h-[70vh] flex flex-col">
