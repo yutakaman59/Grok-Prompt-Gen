@@ -2128,7 +2128,7 @@ function getCameraInstruction() {
         }
 
 function getSkinTextureInstruction() {
-    return `\n\n■ SKIN TEXTURE RULE（必須 — 全出力に適用）\n以下の肌質感指示を必ず grokimagineprompt および englishprompt の末尾近くに自然に組み込むこと：\n"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"\n\n- 過度な肌補正（heavy retouching, airbrushed, plastic smooth skin）は禁止\n- ハイライトと影の境界は自然なグラデーションで表現すること\n- 目・まつ毛・唇・髪の輪郭のエッジシャープネスを必ず維持すること\n- body.skin.texture フィールドには必ず \"defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched\" を含めること`;
+    return `\n\n■ SKIN TEXTURE RULE（必須）\n"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"\n- 過度な肌補正禁止\n- ハイライトと影の境界は自然なグラデーション\n- body.skin.texture に \"defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched\" を含めること`;
 }
 
         function getAspectInstruction() {
@@ -4691,74 +4691,55 @@ function getSubjectDetailInstruction() {
 // プロンプト品質スコア
 // ============================================================
 function initQualityScore() {
-    const closeBtn = document.getElementById('close-quality-btn');
-    if (closeBtn) closeBtn.addEventListener('click', () => document.getElementById('quality-panel')?.classList.remove('show'));
+    const closeBtn=document.getElementById('close-quality-btn'), reshowBtn=document.getElementById('quality-reshow-btn');
+    if(closeBtn) closeBtn.addEventListener('click',()=>{
+        document.getElementById('quality-panel')?.classList.remove('show');
+        if(reshowBtn && outputData?.json) reshowBtn.classList.remove('hidden');
+    });
+    if(reshowBtn) reshowBtn.addEventListener('click',()=>{ reshowBtn.classList.add('hidden'); showQualityScore(outputData); });
 }
 
 function calcQualityScore(data) {
     if (!data?.json) return null;
     const j = data.json;
-    let score = 0;
-    const details = [];
-
-    // 被写体の詳細度 (0-25)
+    let score = 0; const details = [];
     const subjDesc = j.subject?.description || '';
     const subjScore = Math.min(25, Math.floor(subjDesc.length / 8));
     score += subjScore;
     details.push({ label: '被写体の詳細度', score: subjScore, max: 25, ok: subjScore >= 18 });
-
-    // カメラ設定の具体性 (0-20)
-    const cam = j.camera || {};
-    const camFields = [cam.style, cam.angle, cam.shot_type, cam.lighting, cam.depth_of_field].filter(v => v && v !== 'none' && v !== '');
+    const ph = j.photography || {};
+    const camFields = [ph.camera_style, ph.angle, ph.shot_type, ph.lighting, ph.depth_of_field].filter(v => v && v.trim() !== '');
     const camScore = Math.min(20, camFields.length * 4);
     score += camScore;
     details.push({ label: 'カメラ設定', score: camScore, max: 20, ok: camScore >= 16 });
-
-    // ネガティブプロンプト充実度 (0-15)
     const negLen = (j.negative_prompt || []).length;
     const negScore = Math.min(15, negLen * 2);
     score += negScore;
     details.push({ label: 'ネガティブプロンプト', score: negScore, max: 15, ok: negScore >= 10 });
-
-    // Grok Imagineプロンプト長さ (0-20)
     const imagineLen = (data.imagine || '').length;
     const imgScore = imagineLen > 800 ? 20 : imagineLen > 400 ? 15 : imagineLen > 100 ? 8 : 0;
     score += imgScore;
     details.push({ label: 'Grok Imagineプロンプト', score: imgScore, max: 20, ok: imgScore >= 15 });
-
-    // 構図・スタイル情報 (0-20)
-    const hasComposition = !!(j.composition || j.style || j.mood);
-    const styleScore = hasComposition ? 20 : 0;
+    const vibe = j.the_vibe || {}; const bg = j.background || {};
+    const vibeFields = [vibe.mood, vibe.aesthetic, vibe.energy, vibe.story, bg.setting, bg.atmosphere].filter(v => v && v.trim() !== '');
+    const styleScore = Math.min(20, vibeFields.length * 4);
     score += styleScore;
     details.push({ label: '構図・スタイル情報', score: styleScore, max: 20, ok: styleScore >= 15 });
-
     return { score: Math.min(100, score), details };
 }
 
 function showQualityScore(data) {
     const result = calcQualityScore(data);
     if (!result) return;
-    const panel  = document.getElementById('quality-panel');
-    const numEl  = document.getElementById('quality-score-num');
-    const barEl  = document.getElementById('quality-score-bar');
-    const detailEl = document.getElementById('quality-details');
+    const panel=document.getElementById('quality-panel'), reshowBtn=document.getElementById('quality-reshow-btn'),
+          numEl=document.getElementById('quality-score-num'), barEl=document.getElementById('quality-score-bar'),
+          detailEl=document.getElementById('quality-details');
     if (!panel) return;
-
     if (numEl) numEl.textContent = result.score;
-    if (barEl) {
-        barEl.style.width = result.score + '%';
-        barEl.className = `h-full rounded-full ${result.score >= 75 ? 'bg-grok-500' : result.score >= 50 ? 'bg-amber-500' : 'bg-red-500'}`;
-    }
-    if (detailEl) {
-        detailEl.innerHTML = result.details.map(d => `
-            <div class="flex items-center justify-between gap-2">
-                <span class="text-[10px] text-slate-400 flex items-center gap-1">
-                    <span>${d.ok ? '✅' : '⚠️'}</span> ${escapeHtml(d.label)}
-                </span>
-                <span class="text-[10px] font-medium ${d.ok ? 'text-grok-400' : 'text-amber-400'}">${d.score}/${d.max}</span>
-            </div>`).join('');
-    }
+    if (barEl) { barEl.style.width=result.score+'%'; barEl.className=`h-full rounded-full ${result.score>=75?'bg-grok-500':result.score>=50?'bg-amber-500':'bg-red-500'}`; }
+    if (detailEl) detailEl.innerHTML = result.details.map(d=>`<div class="flex items-center justify-between gap-2"><span class="text-[10px] text-slate-400 flex items-center gap-1"><span>${d.ok?'✅':'⚠️'}</span> ${escapeHtml(d.label)}</span><span class="text-[10px] font-medium ${d.ok?'text-grok-400':'text-amber-400'}">${d.score}/${d.max}</span></div>`).join('');
     panel.classList.add('show');
+    if (reshowBtn) reshowBtn.classList.add('hidden');
     lucide.createIcons();
 }
 
@@ -4813,33 +4794,30 @@ function renderAiImproveContent(text) {
 let _aiImproveText = '';
 
 function initAiImprove() {
-    const btn=document.getElementById('ai-improve-btn'), closeBtn=document.getElementById('close-ai-improve-btn'),
-          rerunBtn=document.getElementById('rerun-ai-improve-btn'), applyBtn=document.getElementById('apply-ai-improve-btn'),
+    const btn=document.getElementById('ai-improve-btn'),closeBtn=document.getElementById('close-ai-improve-btn'),
+          rerunBtn=document.getElementById('rerun-ai-improve-btn'),applyBtn=document.getElementById('apply-ai-improve-btn'),
           modal=document.getElementById('ai-improve-modal');
     if(btn) btn.addEventListener('click',()=>{
-        if(_aiImproveRawText){ modal?.classList.add('show'); renderAiImproveContent(_aiImproveRawText); if(rerunBtn) rerunBtn.classList.remove('hidden'); lucide.createIcons(); }
+        if(_aiImproveRawText){modal?.classList.add('show');renderAiImproveContent(_aiImproveRawText);if(rerunBtn)rerunBtn.classList.remove('hidden');lucide.createIcons();}
         else runAiImprove();
     });
-    if(rerunBtn) rerunBtn.addEventListener('click',()=>{ _aiImproveRawText=''; runAiImprove(); });
+    if(rerunBtn) rerunBtn.addEventListener('click',()=>{_aiImproveRawText='';runAiImprove();});
     if(closeBtn) closeBtn.addEventListener('click',()=>modal?.classList.remove('show'));
-    if(modal) modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
+    if(modal) modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show');});
     if(applyBtn) applyBtn.addEventListener('click',()=>{
-        if(_aiImproveText&&els.promptInput){ els.promptInput.value=_aiImproveText; modal?.classList.remove('show'); document.getElementById('generate-btn')?.click(); }
+        if(_aiImproveText&&els.promptInput){els.promptInput.value=_aiImproveText;modal?.classList.remove('show');document.getElementById('generate-btn')?.click();}
     });
 }
 
 async function runAiImprove() {
     if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
-    const keys = getApiKeys();
-    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
-    const modal=document.getElementById('ai-improve-modal'), loading=document.getElementById('ai-improve-loading'),
-          contentEl=document.getElementById('ai-improve-content'), actions=document.getElementById('ai-improve-actions'),
+    const keys=getApiKeys(); if(keys.length===0){showError('APIキーを登録してください。');return;}
+    const modal=document.getElementById('ai-improve-modal'),loading=document.getElementById('ai-improve-loading'),
+          contentEl=document.getElementById('ai-improve-content'),actions=document.getElementById('ai-improve-actions'),
           rerunBtn=document.getElementById('rerun-ai-improve-btn');
     modal?.classList.add('show'); lucide.createIcons();
     if(loading){loading.classList.remove('hidden');loading.style.display='flex';}
-    if(contentEl) contentEl.innerHTML='';
-    if(actions) actions.classList.add('hidden');
-    if(rerunBtn) rerunBtn.classList.add('hidden');
+    if(contentEl) contentEl.innerHTML=''; if(actions) actions.classList.add('hidden'); if(rerunBtn) rerunBtn.classList.add('hidden');
     _aiImproveRawText='';
     const qualResult=calcQualityScore(outputData);
     const lowItems=qualResult?.details.filter(d=>!d.ok).map(d=>`・${d.label}（${d.score}/${d.max}点）`).join('\n')||'（なし）';
@@ -4847,14 +4825,9 @@ async function runAiImprove() {
     try {
         const responseData=await fetchWithKeyRotation(improvePrompt);
         const text=responseData.candidates?.[0]?.content?.parts?.[0]?.text||'提案を取得できませんでした。';
-        _aiImproveRawText=text; renderAiImproveContent(text);
-        if(rerunBtn) rerunBtn.classList.remove('hidden');
-    } catch(e) {
-        if(contentEl) contentEl.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`;
-    } finally {
-        if(loading){loading.classList.add('hidden');loading.style.display='none';}
-        lucide.createIcons();
-    }
+        _aiImproveRawText=text; renderAiImproveContent(text); if(rerunBtn) rerunBtn.classList.remove('hidden');
+    } catch(e) { if(contentEl) contentEl.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`; }
+    finally { if(loading){loading.classList.add('hidden');loading.style.display='none';} lucide.createIcons(); }
 }
 
 // ============================================================
@@ -5320,6 +5293,8 @@ document.addEventListener('DOMContentLoaded', init);
         <i data-lucide="pin" class="w-3.5 h-3.5"></i> この結果をピン留め
     </button>
 </div>
+
+<button id="quality-reshow-btn" class="hidden fixed bottom-4 right-4 z-[149] bg-slate-900 border border-slate-700 hover:border-amber-500/60 text-amber-400 hover:text-amber-300 rounded-xl px-3 py-2 text-xs font-medium shadow-xl transition-all flex items-center gap-1.5"><i data-lucide="star" class="w-3.5 h-3.5"></i> スコアを再表示</button>
 
 <!-- ===== 被写体詳細エディターモーダル ===== -->
 <div id="subject-detail-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
