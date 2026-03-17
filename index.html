@@ -3160,7 +3160,7 @@ function buildResponseSchema() {
 
 // ===================== メイン生成フロー =====================
 async function handleGenerate() {
-    _aiImproveRawText = ''; _aiImprovedPrompts = { imagine: '', en: '', ja: '', json: '' };
+    _aiImproveRawText=''; _aiImprovedPrompts={imagine:'',en:'',ja:'',json:''};
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
 
@@ -4696,55 +4696,43 @@ function initQualityScore() {
         document.getElementById('quality-panel')?.classList.remove('show');
         if (reshowBtn && outputData?.json) reshowBtn.classList.remove('hidden');
     });
-    if (reshowBtn) reshowBtn.addEventListener('click', () => {
-        reshowBtn.classList.add('hidden');
-        showQualityScore(outputData);
-    });
+    if (reshowBtn) reshowBtn.addEventListener('click', () => { reshowBtn.classList.add('hidden'); showQualityScore(outputData); });
 }
 
 function calcQualityScore(data) {
     if (!data?.json) return null;
     const j = data.json; let score = 0; const details = [];
-    const subjDesc = j.subject?.description || '';
-    const subjScore = Math.min(25, Math.floor(subjDesc.length / 8));
+    const subjScore = Math.min(25, Math.floor((j.subject?.description||'').length / 8));
     score += subjScore;
     details.push({ label: '被写体の詳細度', score: subjScore, max: 25, ok: subjScore >= 18 });
     const ph = j.photography || {};
-    const camFields = [ph.camera_style, ph.angle, ph.shot_type, ph.lighting, ph.depth_of_field].filter(v => v && v.trim() !== '');
-    const camScore = Math.min(20, camFields.length * 4);
+    const camScore = Math.min(20, [ph.camera_style,ph.angle,ph.shot_type,ph.lighting,ph.depth_of_field].filter(v=>v&&v.trim()).length * 4);
     score += camScore;
     details.push({ label: 'カメラ設定', score: camScore, max: 20, ok: camScore >= 16 });
-    const negLen = (j.negative_prompt || []).length;
-    const negScore = Math.min(15, negLen * 2);
+    const negScore = Math.min(15, (j.negative_prompt||[]).length * 2);
     score += negScore;
     details.push({ label: 'ネガティブプロンプト', score: negScore, max: 15, ok: negScore >= 10 });
-    const imagineLen = (data.imagine || '').length;
-    const imgScore = imagineLen > 800 ? 20 : imagineLen > 400 ? 15 : imagineLen > 100 ? 8 : 0;
+    const imagineLen = (data.imagine||'').length;
+    const imgScore = imagineLen>800?20:imagineLen>400?15:imagineLen>100?8:0;
     score += imgScore;
     details.push({ label: 'Grok Imagineプロンプト', score: imgScore, max: 20, ok: imgScore >= 15 });
-    const vibe = j.the_vibe || {}; const bg = j.background || {};
-    const vibeFields = [vibe.mood, vibe.aesthetic, vibe.energy, vibe.story, bg.setting, bg.atmosphere].filter(v => v && v.trim() !== '');
-    const styleScore = Math.min(20, vibeFields.length * 4);
+    const vibe = j.the_vibe||{}, bg = j.background||{};
+    const styleScore = Math.min(20, [vibe.mood,vibe.aesthetic,vibe.energy,vibe.story,bg.setting,bg.atmosphere].filter(v=>v&&v.trim()).length * 4);
     score += styleScore;
     details.push({ label: '構図・スタイル情報', score: styleScore, max: 20, ok: styleScore >= 15 });
     return { score: Math.min(100, score), details };
 }
 
 function showQualityScore(data) {
-    const result = calcQualityScore(data);
-    if (!result) return;
+    const result = calcQualityScore(data); if (!result) return;
     const panel=document.getElementById('quality-panel'), reshowBtn=document.getElementById('quality-reshow-btn'),
           numEl=document.getElementById('quality-score-num'), barEl=document.getElementById('quality-score-bar'),
           detailEl=document.getElementById('quality-details');
     if (!panel) return;
     if (numEl) numEl.textContent = result.score;
     if (barEl) { barEl.style.width=result.score+'%'; barEl.className=`h-full rounded-full ${result.score>=75?'bg-grok-500':result.score>=50?'bg-amber-500':'bg-red-500'}`; }
-    if (detailEl) detailEl.innerHTML = result.details.map(d =>
-        `<div class="flex items-center justify-between gap-2"><span class="text-[10px] text-slate-400 flex items-center gap-1"><span>${d.ok?'✅':'⚠️'}</span> ${escapeHtml(d.label)}</span><span class="text-[10px] font-medium ${d.ok?'text-grok-400':'text-amber-400'}">${d.score}/${d.max}</span></div>`
-    ).join('');
-    panel.classList.add('show');
-    if (reshowBtn) reshowBtn.classList.add('hidden');
-    lucide.createIcons();
+    if (detailEl) detailEl.innerHTML = result.details.map(d=>`<div class="flex items-center justify-between gap-2"><span class="text-[10px] text-slate-400 flex items-center gap-1"><span>${d.ok?'✅':'⚠️'}</span> ${escapeHtml(d.label)}</span><span class="text-[10px] font-medium ${d.ok?'text-grok-400':'text-amber-400'}">${d.score}/${d.max}</span></div>`).join('');
+    panel.classList.add('show'); if (reshowBtn) reshowBtn.classList.add('hidden'); lucide.createIcons();
 }
 
 
@@ -4760,9 +4748,8 @@ function renderAiImproveContent(text) {
     const promptsEl = document.getElementById('ai-improve-prompts');
     const actions   = document.getElementById('ai-improve-actions');
     if (!suggEl) return;
-
     // 改善提案セクション
-    const suggSection = text.match(/##\s*改善提案[\s\S]*?(?=##\s*改善後|$)/)?.[0] || '';
+    const suggSection = text.match(/##\s*改善提案[\s\S]*?(?=##\s*(?:Grok|英語|日本語|JSON|改善後)|$)/)?.[0] || '';
     const suggLines   = suggSection.split('\n').filter(l => l.trim() && !l.startsWith('##'));
     if (suggLines.length > 0 && suggList) {
         suggList.innerHTML = suggLines.map((line, idx) => {
@@ -4776,10 +4763,9 @@ function renderAiImproveContent(text) {
         }).join('');
         suggEl.classList.remove('hidden');
     }
-
     // 4種プロンプト抽出
     const extract = (tag) => {
-        const m = text.match(new RegExp('##\\s*' + tag + '\\s*\\n([\\s\\S]+?)(?=\\n##|$)'));
+        const m = text.match(new RegExp('##\\s*' + tag + '\\s*\\n([\\s\\S]+?)(?=\\n##\\s|$)'));
         return m ? m[1].trim() : '';
     };
     const imagine = extract('Grok Imagine');
@@ -4787,33 +4773,29 @@ function renderAiImproveContent(text) {
     const ja      = extract('日本語プロンプト');
     const json    = extract('JSONプロンプト');
     _aiImprovedPrompts = { imagine, en, ja, json };
-
     const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
     setEl('ai-out-imagine', imagine);
     setEl('ai-out-en',      en);
     setEl('ai-out-ja',      ja);
     setEl('ai-out-json',    json);
-
     if (imagine || en || ja || json) {
         if (promptsEl) promptsEl.classList.remove('hidden');
-        // 入力テキストに反映用
-        const applySection = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
-        if (applySection) {
-            _aiImproveText = applySection[1].trim().split('\n')[0].trim();
-            if (actions) actions.classList.remove('hidden');
-        } else if (ja) {
-            _aiImproveText = ja;
-            if (actions) actions.classList.remove('hidden');
-        }
     }
-
-    // 提案コピーボタン
-    document.querySelectorAll('.ai-copy-btn').forEach(btn => {
+    // 入力テキスト反映用
+    const applyM = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
+    if (applyM) {
+        _aiImproveText = applyM[1].trim().split('\n')[0].trim();
+        if (actions) actions.classList.remove('hidden');
+    } else if (ja) {
+        _aiImproveText = ja;
+        if (actions) actions.classList.remove('hidden');
+    }
+    // 提案の個別コピーボタン
+    if (suggList) suggList.querySelectorAll('.ai-copy-btn').forEach(btn => {
         btn.addEventListener('click', e => {
             e.stopPropagation();
-            const idx = btn.dataset.copyIdx;
-            const rows = document.querySelectorAll('.ai-sugg-text');
-            const ct = rows[parseInt(idx)]?.textContent.trim() || '';
+            const rows = suggList.querySelectorAll('.ai-sugg-text');
+            const ct = rows[parseInt(btn.dataset.copyIdx)]?.textContent.trim() || '';
             if (!ct) return;
             navigator.clipboard.writeText(ct).catch(()=>{});
             const icon = btn.querySelector('i');
@@ -4822,13 +4804,11 @@ function renderAiImproveContent(text) {
             setTimeout(()=>{ if(icon){icon.setAttribute('data-lucide','copy');lucide.createIcons();} btn.classList.remove('!opacity-100'); btn.style.color=''; },1500);
         });
     });
-
-    // 4種プロンプトコピーボタン
+    // 4種プロンプトのコピーボタン
     document.querySelectorAll('.ai-prompt-copy-btn').forEach(btn => {
         btn.addEventListener('click', e => {
             e.stopPropagation();
-            const targetId = btn.dataset.target;
-            const ct = document.getElementById(targetId)?.textContent.trim() || '';
+            const ct = document.getElementById(btn.dataset.target)?.textContent.trim() || '';
             if (!ct) return;
             navigator.clipboard.writeText(ct).catch(()=>{});
             const icon = btn.querySelector('i');
@@ -4837,7 +4817,6 @@ function renderAiImproveContent(text) {
             setTimeout(()=>{ if(icon){icon.setAttribute('data-lucide','copy');lucide.createIcons();} btn.style.color=''; },1500);
         });
     });
-
     lucide.createIcons();
 }
 
@@ -4855,9 +4834,9 @@ function initAiImprove() {
             lucide.createIcons();
         } else { runAiImprove(); }
     });
-    if (rerunBtn) rerunBtn.addEventListener('click', () => { _aiImproveRawText = ''; runAiImprove(); });
+    if (rerunBtn) rerunBtn.addEventListener('click', () => { _aiImproveRawText=''; runAiImprove(); });
     if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
-    if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (modal) modal.addEventListener('click', e => { if(e.target===modal) modal.classList.remove('show'); });
     if (applyBtn) applyBtn.addEventListener('click', () => {
         if (_aiImproveText && els.promptInput) {
             els.promptInput.value = _aiImproveText;
@@ -4869,8 +4848,7 @@ function initAiImprove() {
 
 async function runAiImprove() {
     if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
-    const keys = getApiKeys();
-    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
+    const keys = getApiKeys(); if (!keys.length) { showError('APIキーを登録してください。'); return; }
     const modal=document.getElementById('ai-improve-modal'),
           loading=document.getElementById('ai-improve-loading'),
           suggEl=document.getElementById('ai-improve-suggestions'),
@@ -4880,31 +4858,30 @@ async function runAiImprove() {
           rerunBtn=document.getElementById('rerun-ai-improve-btn');
     modal?.classList.add('show'); lucide.createIcons();
     if (loading)   { loading.classList.remove('hidden'); loading.style.display='flex'; }
-    if (suggEl)    { suggEl.classList.add('hidden'); }
-    if (suggList)  { suggList.innerHTML = ''; }
-    if (promptsEl) { promptsEl.classList.add('hidden'); }
-    if (actions)   { actions.classList.add('hidden'); }
-    if (rerunBtn)  { rerunBtn.classList.add('hidden'); }
-    _aiImproveRawText = '';
-    _aiImprovedPrompts = { imagine: '', en: '', ja: '', json: '' };
+    if (suggEl)    suggEl.classList.add('hidden');
+    if (suggList)  suggList.innerHTML = '';
+    if (promptsEl) promptsEl.classList.add('hidden');
+    if (actions)   actions.classList.add('hidden');
+    if (rerunBtn)  rerunBtn.classList.add('hidden');
+    _aiImproveRawText = ''; _aiImprovedPrompts = { imagine:'', en:'', ja:'', json:'' };
     const qualResult = calcQualityScore(outputData);
-    const lowItems = qualResult?.details.filter(d => !d.ok).map(d => `・${d.label}（${d.score}/${d.max}点）`).join('\n') || '（なし）';
+    const lowItems = qualResult?.details.filter(d=>!d.ok).map(d=>`・${d.label}（${d.score}/${d.max}点）`).join('\n')||'（なし）';
     const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。
 以下の現在の生成結果を分析して改善してください。
 
 【現在の入力テキスト】
-${els.promptInput?.value || ''}
+${els.promptInput?.value||''}
 
 【現在のJSON】
-${JSON.stringify(outputData.json, null, 2).slice(0, 1500)}
+${JSON.stringify(outputData.json,null,2).slice(0,1500)}
 
 【スコアが低い項目】
 ${lowItems}
 
-以下の形式で出力してください（各セクションは必ず記載）:
+以下の形式で厳密に出力してください（各セクションのタイトルは必ず ## で始める）:
 
 ## 改善提案
-- （改善ポイントを日本語で箇条書き3〜5点）
+- （日本語で改善ポイント3〜5点）
 
 ## Grok Imagine
 （改善後のGrok Imagineプロンプト全文・英語）
@@ -4916,10 +4893,10 @@ ${lowItems}
 （改善後の日本語プロンプト全文）
 
 ## JSONプロンプト
-（改善後のgrok_prompt_jsonのJSON・コードブロックなし）
+（改善後のgrok_prompt_json JSON・コードブロックなし）
 
 ## 改善後の入力テキスト
-（日本語で100文字以内の入力テキスト案）`;
+（日本語100文字以内）`;
     try {
         const responseData = await fetchWithKeyRotation(improvePrompt);
         const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
@@ -4927,8 +4904,7 @@ ${lowItems}
         renderAiImproveContent(text);
         if (rerunBtn) rerunBtn.classList.remove('hidden');
     } catch(e) {
-        const suggList2 = document.getElementById('ai-improve-sugg-list');
-        if (suggList2) { suggList2.innerHTML = `<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`; }
+        if (suggList) { suggList.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`; }
         if (suggEl) suggEl.classList.remove('hidden');
     } finally {
         if (loading) { loading.classList.add('hidden'); loading.style.display='none'; }
@@ -5444,7 +5420,6 @@ document.addEventListener('DOMContentLoaded', init);
 <!-- AI改善提案 -->
 <div id="ai-improve-modal" class="fixed inset-0 z-[200] items-center justify-center bg-black/70 backdrop-blur-sm p-4">
     <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-        <!-- ヘッダー -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
             <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm"><i data-lucide="wand-2" class="w-4 h-4 text-purple-400"></i> AI改善提案</h2>
             <div class="flex items-center gap-2">
@@ -5452,9 +5427,7 @@ document.addEventListener('DOMContentLoaded', init);
                 <button id="close-ai-improve-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
         </div>
-        <!-- ボディ -->
         <div class="p-5 flex-1 overflow-y-auto space-y-4">
-            <!-- ローディング -->
             <div id="ai-improve-loading" class="hidden items-center gap-3 text-slate-400 text-sm py-8 justify-center">
                 <i data-lucide="loader-2" class="w-5 h-5 spinner text-purple-400"></i> AIが改善提案を生成中...
             </div>
@@ -5463,43 +5436,38 @@ document.addEventListener('DOMContentLoaded', init);
                 <p class="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="lightbulb" class="w-3 h-3"></i> 改善提案</p>
                 <div id="ai-improve-sugg-list" class="space-y-1.5"></div>
             </div>
-            <!-- 4種プロンプト出力 -->
+            <!-- 4種プロンプト -->
             <div id="ai-improve-prompts" class="hidden space-y-3">
                 <p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="pen-line" class="w-3 h-3"></i> 改善後のプロンプト</p>
-                <!-- Grok Imagine -->
                 <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
                     <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
                         <span class="text-[10px] font-semibold text-grok-400 flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i> Grok Imagine</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-imagine" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-grok-400 transition-colors"></i></button>
+                        <button class="ai-prompt-copy-btn" data-target="ai-out-imagine" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-grok-400 transition-colors pointer-events-none"></i></button>
                     </div>
                     <p id="ai-out-imagine" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
                 </div>
-                <!-- 英語プロンプト -->
                 <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
                     <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
                         <span class="text-[10px] font-semibold text-blue-400 flex items-center gap-1"><i data-lucide="languages" class="w-3 h-3"></i> 英語プロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-en" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-blue-400 transition-colors"></i></button>
+                        <button class="ai-prompt-copy-btn" data-target="ai-out-en" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-blue-400 transition-colors pointer-events-none"></i></button>
                     </div>
                     <p id="ai-out-en" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
                 </div>
-                <!-- 日本語プロンプト -->
                 <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
                     <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
                         <span class="text-[10px] font-semibold text-emerald-400 flex items-center gap-1"><i data-lucide="type" class="w-3 h-3"></i> 日本語プロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-ja" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-emerald-400 transition-colors"></i></button>
+                        <button class="ai-prompt-copy-btn" data-target="ai-out-ja" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-emerald-400 transition-colors pointer-events-none"></i></button>
                     </div>
                     <p id="ai-out-ja" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed whitespace-pre-wrap"></p>
                 </div>
-                <!-- JSONプロンプト -->
                 <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl overflow-hidden">
                     <div class="flex items-center justify-between px-3 py-1.5 border-b border-slate-700/50 bg-slate-800">
                         <span class="text-[10px] font-semibold text-orange-400 flex items-center gap-1"><i data-lucide="braces" class="w-3 h-3"></i> JSONプロンプト</span>
-                        <button class="ai-prompt-copy-btn" data-target="ai-out-json" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-orange-400 transition-colors"></i></button>
+                        <button class="ai-prompt-copy-btn" data-target="ai-out-json" title="コピー"><i data-lucide="copy" class="w-3.5 h-3.5 text-slate-500 hover:text-orange-400 transition-colors pointer-events-none"></i></button>
                     </div>
-                    <pre id="ai-out-json" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed overflow-x-auto"></pre>
+                    <pre id="ai-out-json" class="text-xs text-slate-300 px-3 py-2.5 leading-relaxed overflow-x-auto whitespace-pre-wrap"></pre>
                 </div>
             </div>
-            <!-- 入力テキストに反映ボタン -->
             <div id="ai-improve-actions" class="hidden pt-1">
                 <button id="apply-ai-improve-btn" class="w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1.5">
                     <i data-lucide="zap" class="w-3.5 h-3.5"></i> 改善後テキストを入力欄に反映して再生成
