@@ -2128,7 +2128,7 @@ function getCameraInstruction() {
         }
 
 function getSkinTextureInstruction() {
-    return `\n\n■ SKIN TEXTURE RULE（必須）\n"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"\n- 過度な肌補正禁止\n- ハイライトと影の境界は自然なグラデーション\n- body.skin.texture に \"defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched\" を含めること`;
+    return `\n\n■ SKIN TEXTURE RULE（必須 — 全出力に適用）\n以下の肌質感指示を必ず grokimagineprompt および englishprompt の末尾近くに自然に組み込むこと：\n"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"\n\n- 過度な肌補正（heavy retouching, airbrushed, plastic smooth skin）は禁止\n- ハイライトと影の境界は自然なグラデーションで表現すること\n- 目・まつ毛・唇・髪の輪郭のエッジシャープネスを必ず維持すること\n- body.skin.texture フィールドには必ず \"defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched\" を含めること`;
 }
 
         function getAspectInstruction() {
@@ -3160,7 +3160,7 @@ function buildResponseSchema() {
 
 // ===================== メイン生成フロー =====================
 async function handleGenerate() {
-    _aiImproveRawText='';
+    _aiImproveRawText = '';
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
 
@@ -4692,34 +4692,41 @@ function getSubjectDetailInstruction() {
 // ============================================================
 function initQualityScore() {
     const closeBtn=document.getElementById('close-quality-btn'), reshowBtn=document.getElementById('quality-reshow-btn');
-    if(closeBtn) closeBtn.addEventListener('click',()=>{
+    if (closeBtn) closeBtn.addEventListener('click', () => {
         document.getElementById('quality-panel')?.classList.remove('show');
-        if(reshowBtn && outputData?.json) reshowBtn.classList.remove('hidden');
+        if (reshowBtn && outputData?.json) reshowBtn.classList.remove('hidden');
     });
-    if(reshowBtn) reshowBtn.addEventListener('click',()=>{ reshowBtn.classList.add('hidden'); showQualityScore(outputData); });
+    if (reshowBtn) reshowBtn.addEventListener('click', () => {
+        reshowBtn.classList.add('hidden');
+        showQualityScore(outputData);
+    });
 }
 
 function calcQualityScore(data) {
     if (!data?.json) return null;
-    const j = data.json;
-    let score = 0; const details = [];
+    const j = data.json; let score = 0; const details = [];
+    // 被写体の詳細度 (0-25)
     const subjDesc = j.subject?.description || '';
     const subjScore = Math.min(25, Math.floor(subjDesc.length / 8));
     score += subjScore;
     details.push({ label: '被写体の詳細度', score: subjScore, max: 25, ok: subjScore >= 18 });
+    // カメラ設定 (0-20) — j.photography を参照
     const ph = j.photography || {};
     const camFields = [ph.camera_style, ph.angle, ph.shot_type, ph.lighting, ph.depth_of_field].filter(v => v && v.trim() !== '');
     const camScore = Math.min(20, camFields.length * 4);
     score += camScore;
     details.push({ label: 'カメラ設定', score: camScore, max: 20, ok: camScore >= 16 });
+    // ネガティブプロンプト (0-15)
     const negLen = (j.negative_prompt || []).length;
     const negScore = Math.min(15, negLen * 2);
     score += negScore;
     details.push({ label: 'ネガティブプロンプト', score: negScore, max: 15, ok: negScore >= 10 });
+    // Grok Imagineプロンプト長さ (0-20)
     const imagineLen = (data.imagine || '').length;
     const imgScore = imagineLen > 800 ? 20 : imagineLen > 400 ? 15 : imagineLen > 100 ? 8 : 0;
     score += imgScore;
     details.push({ label: 'Grok Imagineプロンプト', score: imgScore, max: 20, ok: imgScore >= 15 });
+    // 構図・スタイル情報 (0-20) — j.the_vibe / j.background を参照
     const vibe = j.the_vibe || {}; const bg = j.background || {};
     const vibeFields = [vibe.mood, vibe.aesthetic, vibe.energy, vibe.story, bg.setting, bg.atmosphere].filter(v => v && v.trim() !== '');
     const styleScore = Math.min(20, vibeFields.length * 4);
@@ -4737,7 +4744,9 @@ function showQualityScore(data) {
     if (!panel) return;
     if (numEl) numEl.textContent = result.score;
     if (barEl) { barEl.style.width=result.score+'%'; barEl.className=`h-full rounded-full ${result.score>=75?'bg-grok-500':result.score>=50?'bg-amber-500':'bg-red-500'}`; }
-    if (detailEl) detailEl.innerHTML = result.details.map(d=>`<div class="flex items-center justify-between gap-2"><span class="text-[10px] text-slate-400 flex items-center gap-1"><span>${d.ok?'✅':'⚠️'}</span> ${escapeHtml(d.label)}</span><span class="text-[10px] font-medium ${d.ok?'text-grok-400':'text-amber-400'}">${d.score}/${d.max}</span></div>`).join('');
+    if (detailEl) detailEl.innerHTML = result.details.map(d =>
+        `<div class="flex items-center justify-between gap-2"><span class="text-[10px] text-slate-400 flex items-center gap-1"><span>${d.ok?'✅':'⚠️'}</span> ${escapeHtml(d.label)}</span><span class="text-[10px] font-medium ${d.ok?'text-grok-400':'text-amber-400'}">${d.score}/${d.max}</span></div>`
+    ).join('');
     panel.classList.add('show');
     if (reshowBtn) reshowBtn.classList.add('hidden');
     lucide.createIcons();
@@ -4794,40 +4803,57 @@ function renderAiImproveContent(text) {
 let _aiImproveText = '';
 
 function initAiImprove() {
-    const btn=document.getElementById('ai-improve-btn'),closeBtn=document.getElementById('close-ai-improve-btn'),
-          rerunBtn=document.getElementById('rerun-ai-improve-btn'),applyBtn=document.getElementById('apply-ai-improve-btn'),
+    const btn=document.getElementById('ai-improve-btn'), closeBtn=document.getElementById('close-ai-improve-btn'),
+          rerunBtn=document.getElementById('rerun-ai-improve-btn'), applyBtn=document.getElementById('apply-ai-improve-btn'),
           modal=document.getElementById('ai-improve-modal');
-    if(btn) btn.addEventListener('click',()=>{
-        if(_aiImproveRawText){modal?.classList.add('show');renderAiImproveContent(_aiImproveRawText);if(rerunBtn)rerunBtn.classList.remove('hidden');lucide.createIcons();}
-        else runAiImprove();
+    if (btn) btn.addEventListener('click', () => {
+        if (_aiImproveRawText) {
+            modal?.classList.add('show');
+            renderAiImproveContent(_aiImproveRawText);
+            if (rerunBtn) rerunBtn.classList.remove('hidden');
+            lucide.createIcons();
+        } else { runAiImprove(); }
     });
-    if(rerunBtn) rerunBtn.addEventListener('click',()=>{_aiImproveRawText='';runAiImprove();});
-    if(closeBtn) closeBtn.addEventListener('click',()=>modal?.classList.remove('show'));
-    if(modal) modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('show');});
-    if(applyBtn) applyBtn.addEventListener('click',()=>{
-        if(_aiImproveText&&els.promptInput){els.promptInput.value=_aiImproveText;modal?.classList.remove('show');document.getElementById('generate-btn')?.click();}
+    if (rerunBtn) rerunBtn.addEventListener('click', () => { _aiImproveRawText = ''; runAiImprove(); });
+    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
+    if (modal) modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+    if (applyBtn) applyBtn.addEventListener('click', () => {
+        if (_aiImproveText && els.promptInput) {
+            els.promptInput.value = _aiImproveText;
+            modal?.classList.remove('show');
+            document.getElementById('generate-btn')?.click();
+        }
     });
 }
 
 async function runAiImprove() {
     if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
-    const keys=getApiKeys(); if(keys.length===0){showError('APIキーを登録してください。');return;}
-    const modal=document.getElementById('ai-improve-modal'),loading=document.getElementById('ai-improve-loading'),
-          contentEl=document.getElementById('ai-improve-content'),actions=document.getElementById('ai-improve-actions'),
+    const keys = getApiKeys();
+    if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
+    const modal=document.getElementById('ai-improve-modal'), loading=document.getElementById('ai-improve-loading'),
+          contentEl=document.getElementById('ai-improve-content'), actions=document.getElementById('ai-improve-actions'),
           rerunBtn=document.getElementById('rerun-ai-improve-btn');
     modal?.classList.add('show'); lucide.createIcons();
-    if(loading){loading.classList.remove('hidden');loading.style.display='flex';}
-    if(contentEl) contentEl.innerHTML=''; if(actions) actions.classList.add('hidden'); if(rerunBtn) rerunBtn.classList.add('hidden');
-    _aiImproveRawText='';
-    const qualResult=calcQualityScore(outputData);
-    const lowItems=qualResult?.details.filter(d=>!d.ok).map(d=>`・${d.label}（${d.score}/${d.max}点）`).join('\n')||'（なし）';
-    const improvePrompt=`あなたはGrok Imagineプロンプトの専門家です。\n以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きにしてください。\nまた最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。\n\n【現在の入力テキスト】\n${els.promptInput?.value||''}\n\n【現在のJSON】\n${JSON.stringify(outputData.json,null,2).slice(0,1500)}\n\n【スコアが低い項目】\n${lowItems}\n\n出力形式:\n## 改善提案\n- ...（箇条書き3〜5点）\n\n## 改善後の入力テキスト\n（ここに改善後のテキストのみ）`;
+    if (loading) { loading.classList.remove('hidden'); loading.style.display='flex'; }
+    if (contentEl) contentEl.innerHTML = '';
+    if (actions) actions.classList.add('hidden');
+    if (rerunBtn) rerunBtn.classList.add('hidden');
+    _aiImproveRawText = '';
+    const qualResult = calcQualityScore(outputData);
+    const lowItems = qualResult?.details.filter(d => !d.ok).map(d => `・${d.label}（${d.score}/${d.max}点）`).join('\n') || '（なし）';
+    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。\n以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きにしてください。\nまた最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。\n\n【現在の入力テキスト】\n${els.promptInput?.value||''}\n\n【現在のJSON】\n${JSON.stringify(outputData.json,null,2).slice(0,1500)}\n\n【スコアが低い項目】\n${lowItems}\n\n出力形式:\n## 改善提案\n- ...（箇条書き3〜5点）\n\n## 改善後の入力テキスト\n（ここに改善後のテキストのみ）`;
     try {
-        const responseData=await fetchWithKeyRotation(improvePrompt);
-        const text=responseData.candidates?.[0]?.content?.parts?.[0]?.text||'提案を取得できませんでした。';
-        _aiImproveRawText=text; renderAiImproveContent(text); if(rerunBtn) rerunBtn.classList.remove('hidden');
-    } catch(e) { if(contentEl) contentEl.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`; }
-    finally { if(loading){loading.classList.add('hidden');loading.style.display='none';} lucide.createIcons(); }
+        const responseData = await fetchWithKeyRotation(improvePrompt);
+        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
+        _aiImproveRawText = text;
+        renderAiImproveContent(text);
+        if (rerunBtn) rerunBtn.classList.remove('hidden');
+    } catch(e) {
+        if (contentEl) contentEl.innerHTML = `<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`;
+    } finally {
+        if (loading) { loading.classList.add('hidden'); loading.style.display='none'; }
+        lucide.createIcons();
+    }
 }
 
 // ============================================================
