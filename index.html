@@ -1127,13 +1127,13 @@
                     <span class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></span>
                     <span class="ml-2 text-xs font-mono text-slate-400">grok_prompt.json</span>
                 </div>
-                <button id="export-markdown-btn" title="Markdownレポートをダウンロード" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
-                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
-                    <span class="hidden sm:inline">MD出力</span>
-                </button>
                 <button id="copy-json-btn" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
                     <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
                     <span id="copy-json-text" class="hidden sm:inline">コピー</span>
+                </button>
+                <button id="export-markdown-btn" title="Markdownレポートをダウンロード" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">MD出力</span>
                 </button>
             </div>
             <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
@@ -2315,7 +2315,7 @@ function getCameraInstruction() {
                         ${isMain ? '<span class="text-[10px] text-amber-400 bg-amber-500/10 rounded px-1">● メイン</span>' : ''}
                         ${isSub  ? '<span class="text-[10px] text-purple-400 bg-purple-500/10 rounded px-1">● サブ</span>' : ''}
                     </div>`;
-                div.dataset.subjectId = s.id;
+                div.addEventListener('click', () => openSubjectForm(s.id));
                 els.subjectList.appendChild(div);
             });
             lucide.createIcons();
@@ -2497,11 +2497,6 @@ function getCameraInstruction() {
             els.clearSubBtn          = document.getElementById('clear-sub-btn');
             els.newSubjectBtn        = document.getElementById('new-subject-btn');
             els.subjectList          = document.getElementById('subject-list');
-            // イベント委譲: 再レンダリング時の重複登録を防ぐ
-            els.subjectList.addEventListener('click', e => {
-                const card = e.target.closest('[data-subject-id]');
-                if (card) openSubjectForm(card.dataset.subjectId);
-            });
             els.subjectFormPlaceholder = document.getElementById('subject-form-placeholder');
             els.subjectForm          = document.getElementById('subject-form');
             els.sfName               = document.getElementById('sf-name');
@@ -3160,6 +3155,7 @@ function buildResponseSchema() {
 
 // ===================== メイン生成フロー =====================
 async function handleGenerate() {
+    _aiImproveRawText = '';
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
 
@@ -3249,7 +3245,7 @@ function getHistory() {
 function addHistory(entry) {
     const history = getHistory();
     history.unshift(entry);
-    while (history.length > 30) history.pop(); // 最大30件
+    if (history.length > 30) history.pop(); // 最大30件
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     renderHistory();
 }
@@ -4708,7 +4704,7 @@ function calcQualityScore(data) {
 
     // カメラ設定の具体性 (0-20)
     const cam = j.camera || {};
-    const camFields = [cam.style, cam.angle, cam.shottype, cam.lighting, cam.depthoffield].filter(v => v && v !== 'none' && v !== '');
+    const camFields = [cam.style, cam.angle, cam.shot_type, cam.lighting, cam.depth_of_field].filter(v => v && v !== 'none' && v !== '');
     const camScore = Math.min(20, camFields.length * 4);
     score += camScore;
     details.push({ label: 'カメラ設定', score: camScore, max: 20, ok: camScore >= 16 });
@@ -4765,14 +4761,100 @@ function showQualityScore(data) {
 // ============================================================
 // AI改善提案
 // ============================================================
+let _aiImproveRawText = '';
+
+function renderAiImproveContent(text) {
+    const contentEl = document.getElementById('ai-improve-content');
+    const actions   = document.getElementById('ai-improve-actions');
+    if (!contentEl) return;
+
+    const suggSection  = text.match(/##\s*改善提案[\s\S]*?(?=##\s*改善後|$)/)?.[0] || '';
+    const applySection = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
+    const applyText    = applySection ? applySection[1].trim().split('\n')[0].trim() : '';
+    const suggLines    = suggSection.split('\n').filter(l => l.trim() && !l.startsWith('##'));
+
+    let html = '';
+    if (suggLines.length > 0) {
+        html += '<div class="mb-3">'
+             + '<p class="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">'
+             + '<i data-lucide="lightbulb" class="w-3 h-3"></i> 改善提案</p>'
+             + '<div class="space-y-1.5">';
+        suggLines.forEach((line, idx) => {
+            const cl = escapeHtml(line.replace(/^[-・*]\s*/, '').trim());
+            if (!cl) return;
+            html += `<div class="flex items-start gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 group">`
+                  + `<span class="text-purple-400 text-xs mt-0.5 flex-shrink-0">·</span>`
+                  + `<span class="text-xs text-slate-300 flex-1 leading-relaxed">${cl}</span>`
+                  + `<button data-copy-idx="${idx}" title="コピー" class="ai-copy-btn flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-grok-400 p-0.5 rounded">`
+                  + `<i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div>`;
+        });
+        html += '</div></div>';
+    }
+    if (applyText) {
+        const ca = escapeHtml(applyText);
+        html += '<div>'
+             + '<p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">'
+             + '<i data-lucide="pen-line" class="w-3 h-3"></i> 改善後の入力テキスト</p>'
+             + `<div class="relative bg-amber-500/5 border border-amber-500/25 rounded-lg px-3 py-2.5 group">`
+             + `<p class="text-xs text-amber-100/80 leading-relaxed pr-7">${ca}</p>`
+             + `<button data-copy-idx="apply" title="コピー" class="ai-copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-amber-400 p-0.5 rounded">`
+             + `<i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div></div>`;
+        _aiImproveText = applyText;
+        if (actions) actions.classList.remove('hidden');
+    }
+    if (!suggLines.length && !applyText) {
+        html = `<p class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">${escapeHtml(text)}</p>`;
+    }
+    contentEl.innerHTML = html;
+    contentEl.querySelectorAll('.ai-copy-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            e.stopPropagation();
+            const idx = btn.dataset.copyIdx;
+            let ct = '';
+            if (idx === 'apply') {
+                ct = _aiImproveText;
+            } else {
+                const rows = contentEl.querySelectorAll('span.flex-1');
+                if (rows[parseInt(idx)]) ct = rows[parseInt(idx)].textContent.trim();
+            }
+            if (!ct) return;
+            navigator.clipboard.writeText(ct).catch(() => {});
+            const icon = btn.querySelector('i');
+            if (icon) { icon.setAttribute('data-lucide', 'check'); lucide.createIcons(); }
+            btn.classList.add('!opacity-100');
+            btn.style.color = '#14b8a6';
+            setTimeout(() => {
+                if (icon) { icon.setAttribute('data-lucide', 'copy'); lucide.createIcons(); }
+                btn.classList.remove('!opacity-100');
+                btn.style.color = '';
+            }, 1500);
+        });
+    });
+    lucide.createIcons();
+}
+
 let _aiImproveText = '';
 
 function initAiImprove() {
     const btn      = document.getElementById('ai-improve-btn');
     const closeBtn = document.getElementById('close-ai-improve-btn');
+    const rerunBtn = document.getElementById('rerun-ai-improve-btn');
     const applyBtn = document.getElementById('apply-ai-improve-btn');
     const modal    = document.getElementById('ai-improve-modal');
-    if (btn)      btn.addEventListener('click', runAiImprove);
+    if (btn) btn.addEventListener('click', () => {
+        if (_aiImproveRawText) {
+            modal?.classList.add('show');
+            renderAiImproveContent(_aiImproveRawText);
+            if (rerunBtn) rerunBtn.classList.remove('hidden');
+            lucide.createIcons();
+        } else {
+            runAiImprove();
+        }
+    });
+    if (rerunBtn) rerunBtn.addEventListener('click', () => {
+        _aiImproveRawText = '';
+        runAiImprove();
+    });
     if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
     if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
     if (applyBtn) applyBtn.addEventListener('click', () => {
@@ -4788,50 +4870,31 @@ async function runAiImprove() {
     if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
-    const modal    = document.getElementById('ai-improve-modal');
-    const loading  = document.getElementById('ai-improve-loading');
-    const content  = document.getElementById('ai-improve-content');
-    const actions  = document.getElementById('ai-improve-actions');
+    const modal     = document.getElementById('ai-improve-modal');
+    const loading   = document.getElementById('ai-improve-loading');
+    const contentEl = document.getElementById('ai-improve-content');
+    const actions   = document.getElementById('ai-improve-actions');
+    const rerunBtn  = document.getElementById('rerun-ai-improve-btn');
     modal?.classList.add('show');
     lucide.createIcons();
-    if (loading) { loading.classList.remove('hidden'); loading.style.display = 'flex'; }
-    if (content)  content.textContent = '';
-    if (actions)  actions.classList.add('hidden');
+    if (loading)   { loading.classList.remove('hidden'); loading.style.display = 'flex'; }
+    if (contentEl)   contentEl.innerHTML = '';
+    if (actions)     actions.classList.add('hidden');
+    if (rerunBtn)    rerunBtn.classList.add('hidden');
+    _aiImproveRawText = '';
 
     const qualResult = calcQualityScore(outputData);
     const lowItems   = qualResult?.details.filter(d => !d.ok).map(d => `・${d.label}（${d.score}/${d.max}点）`).join('\n') || '（なし）';
-    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。
-以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きしてください。
-また最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。
-
-【現在の入力テキスト】
-${els.promptInput?.value || ''}
-
-【現在のJSON】
-${JSON.stringify(outputData.json, null, 2).slice(0, 1500)}
-
-【スコアが低い項目】
-${lowItems}
-
-出力形式:
-## 改善提案
-- ...（箇条書き3〜5点）
-
-## 改善後の入力テキスト
-（ここに改善後のテキストのみ）`;
+    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。\n以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きにしてください。\nまた最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。\n\n【現在の入力テキスト】\n${els.promptInput?.value || ''}\n\n【現在のJSON】\n${JSON.stringify(outputData.json, null, 2).slice(0, 1500)}\n\n【スコアが低い項目】\n${lowItems}\n\n出力形式:\n## 改善提案\n- ...（箇条書き3～5点）\n\n## 改善後の入力テキスト\n（ここに改善後のテキストのみ）`;
 
     try {
         const responseData = await fetchWithKeyRotation(improvePrompt);
         const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
-        if (content) content.textContent = text;
-        // 「改善後の入力テキスト」セクションを抽出
-        const match = text.match(/##\s*改善後の入力テキスト\s*\n([\s\S]+)/);
-        if (match) {
-            _aiImproveText = match[1].trim().split('\n')[0].trim();
-            if (actions) actions.classList.remove('hidden');
-        }
+        _aiImproveRawText = text;
+        renderAiImproveContent(text);
+        if (rerunBtn) rerunBtn.classList.remove('hidden');
     } catch(e) {
-        if (content) content.textContent = 'エラー: ' + e.message;
+        if (contentEl) contentEl.innerHTML = `<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`;
     } finally {
         if (loading) { loading.classList.add('hidden'); loading.style.display = 'none'; }
         lucide.createIcons();
