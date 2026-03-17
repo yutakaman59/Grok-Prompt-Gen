@@ -2127,18 +2127,8 @@ function getCameraInstruction() {
             return result;
         }
 
-// 肌質感固定プロンプト（全プリセット・全生成に自動付与）
 function getSkinTextureInstruction() {
-    return `
-
-■ SKIN TEXTURE RULE（必須 — 全出力に適用）
-以下の肌質感指示を必ず grokimagineprompt および englishprompt の末尾近くに自然に組み込むこと：
-"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"
-
-- 過度な肌補正（heavy retouching, airbrushed, plastic smooth skin）は禁止
-- ハイライトと影の境界は自然なグラデーションで表現すること
-- 目・まつ毛・唇・髪の輪郭のエッジシャープネスを必ず維持すること
-- body.skin.texture フィールドには必ず "defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched" を含めること`;
+    return `\n\n■ SKIN TEXTURE RULE（必須 — 全出力に適用）\n以下の肌質感指示を必ず grokimagineprompt および englishprompt の末尾近くに自然に組み込むこと：\n"realistic skin detail with defined pores, natural shadow-to-highlight transitions, preserved light tones, sharp edge detail around eyes, eyelashes, lips and hair — premium beauty photo skin texture, unadulterated and non-retouched"\n\n- 過度な肌補正（heavy retouching, airbrushed, plastic smooth skin）は禁止\n- ハイライトと影の境界は自然なグラデーションで表現すること\n- 目・まつ毛・唇・髪の輪郭のエッジシャープネスを必ず維持すること\n- body.skin.texture フィールドには必ず \"defined pores, natural skin texture, realistic shadow-highlight transitions, not overly retouched\" を含めること`;
 }
 
         function getAspectInstruction() {
@@ -3170,7 +3160,7 @@ function buildResponseSchema() {
 
 // ===================== メイン生成フロー =====================
 async function handleGenerate() {
-    _aiImproveRawText = '';
+    _aiImproveRawText='';
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
 
@@ -4788,52 +4778,33 @@ function renderAiImproveContent(text) {
     const suggLines    = suggSection.split('\n').filter(l => l.trim() && !l.startsWith('##'));
     let html = '';
     if (suggLines.length > 0) {
-        html += '<div class="mb-3">'
-             + '<p class="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">'
-             + '<i data-lucide="lightbulb" class="w-3 h-3"></i> 改善提案</p>'
-             + '<div class="space-y-1.5">';
+        html += '<div class="mb-3"><p class="text-[10px] font-semibold text-purple-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="lightbulb" class="w-3 h-3"></i> 改善提案</p><div class="space-y-1.5">';
         suggLines.forEach((line, idx) => {
             const cl = escapeHtml(line.replace(/^[-・*]\s*/, '').trim());
             if (!cl) return;
-            html += `<div class="flex items-start gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 group">`
-                  + `<span class="text-purple-400 text-xs mt-0.5 flex-shrink-0">·</span>`
-                  + `<span class="text-xs text-slate-300 flex-1 leading-relaxed">${cl}</span>`
-                  + `<button data-copy-idx="${idx}" title="コピー" class="ai-copy-btn flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-grok-400 p-0.5 rounded">`
-                  + `<i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div>`;
+            html += `<div class="flex items-start gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2 group"><span class="text-purple-400 text-xs mt-0.5 flex-shrink-0">·</span><span class="text-xs text-slate-300 flex-1 leading-relaxed">${cl}</span><button data-copy-idx="${idx}" class="ai-copy-btn flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-grok-400 p-0.5 rounded"><i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div>`;
         });
         html += '</div></div>';
     }
     if (applyText) {
         const ca = escapeHtml(applyText);
-        html += '<div>'
-             + '<p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">'
-             + '<i data-lucide="pen-line" class="w-3 h-3"></i> 改善後の入力テキスト</p>'
-             + `<div class="relative bg-amber-500/5 border border-amber-500/25 rounded-lg px-3 py-2.5 group">`
-             + `<p class="text-xs text-amber-100/80 leading-relaxed pr-7">${ca}</p>`
-             + `<button data-copy-idx="apply" title="コピー" class="ai-copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-amber-400 p-0.5 rounded">`
-             + `<i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div></div>`;
+        html += `<div><p class="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5"><i data-lucide="pen-line" class="w-3 h-3"></i> 改善後の入力テキスト</p><div class="relative bg-amber-500/5 border border-amber-500/25 rounded-lg px-3 py-2.5 group"><p class="text-xs text-amber-100/80 leading-relaxed pr-7">${ca}</p><button data-copy-idx="apply" class="ai-copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-amber-400 p-0.5 rounded"><i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i></button></div></div>`;
         _aiImproveText = applyText;
         if (actions) actions.classList.remove('hidden');
     }
-    if (!suggLines.length && !applyText) {
-        html = `<p class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">${escapeHtml(text)}</p>`;
-    }
+    if (!suggLines.length && !applyText) html = `<p class="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed">${escapeHtml(text)}</p>`;
     contentEl.innerHTML = html;
     contentEl.querySelectorAll('.ai-copy-btn').forEach(btn => {
         btn.addEventListener('click', e => {
             e.stopPropagation();
             const idx = btn.dataset.copyIdx;
-            let ct = idx === 'apply' ? _aiImproveText
-                   : (() => { const rows = contentEl.querySelectorAll('span.flex-1'); return rows[parseInt(idx)]?.textContent.trim() || ''; })();
+            const ct = idx === 'apply' ? _aiImproveText : (contentEl.querySelectorAll('span.flex-1')[parseInt(idx)]?.textContent.trim() || '');
             if (!ct) return;
             navigator.clipboard.writeText(ct).catch(() => {});
             const icon = btn.querySelector('i');
-            if (icon) { icon.setAttribute('data-lucide', 'check'); lucide.createIcons(); }
-            btn.classList.add('!opacity-100'); btn.style.color = '#14b8a6';
-            setTimeout(() => {
-                if (icon) { icon.setAttribute('data-lucide', 'copy'); lucide.createIcons(); }
-                btn.classList.remove('!opacity-100'); btn.style.color = '';
-            }, 1500);
+            if (icon) { icon.setAttribute('data-lucide','check'); lucide.createIcons(); }
+            btn.classList.add('!opacity-100'); btn.style.color='#14b8a6';
+            setTimeout(() => { if(icon){icon.setAttribute('data-lucide','copy');lucide.createIcons();} btn.classList.remove('!opacity-100'); btn.style.color=''; }, 1500);
         });
     });
     lucide.createIcons();
@@ -4842,33 +4813,18 @@ function renderAiImproveContent(text) {
 let _aiImproveText = '';
 
 function initAiImprove() {
-    const btn      = document.getElementById('ai-improve-btn');
-    const closeBtn = document.getElementById('close-ai-improve-btn');
-    const rerunBtn = document.getElementById('rerun-ai-improve-btn');
-    const applyBtn = document.getElementById('apply-ai-improve-btn');
-    const modal    = document.getElementById('ai-improve-modal');
-    if (btn) btn.addEventListener('click', () => {
-        if (_aiImproveRawText) {
-            modal?.classList.add('show');
-            renderAiImproveContent(_aiImproveRawText);
-            if (rerunBtn) rerunBtn.classList.remove('hidden');
-            lucide.createIcons();
-        } else {
-            runAiImprove();
-        }
+    const btn=document.getElementById('ai-improve-btn'), closeBtn=document.getElementById('close-ai-improve-btn'),
+          rerunBtn=document.getElementById('rerun-ai-improve-btn'), applyBtn=document.getElementById('apply-ai-improve-btn'),
+          modal=document.getElementById('ai-improve-modal');
+    if(btn) btn.addEventListener('click',()=>{
+        if(_aiImproveRawText){ modal?.classList.add('show'); renderAiImproveContent(_aiImproveRawText); if(rerunBtn) rerunBtn.classList.remove('hidden'); lucide.createIcons(); }
+        else runAiImprove();
     });
-    if (rerunBtn) rerunBtn.addEventListener('click', () => {
-        _aiImproveRawText = '';
-        runAiImprove();
-    });
-    if (closeBtn) closeBtn.addEventListener('click', () => modal?.classList.remove('show'));
-    if (modal)    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
-    if (applyBtn) applyBtn.addEventListener('click', () => {
-        if (_aiImproveText && els.promptInput) {
-            els.promptInput.value = _aiImproveText;
-            modal?.classList.remove('show');
-            document.getElementById('generate-btn')?.click();
-        }
+    if(rerunBtn) rerunBtn.addEventListener('click',()=>{ _aiImproveRawText=''; runAiImprove(); });
+    if(closeBtn) closeBtn.addEventListener('click',()=>modal?.classList.remove('show'));
+    if(modal) modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
+    if(applyBtn) applyBtn.addEventListener('click',()=>{
+        if(_aiImproveText&&els.promptInput){ els.promptInput.value=_aiImproveText; modal?.classList.remove('show'); document.getElementById('generate-btn')?.click(); }
     });
 }
 
@@ -4876,31 +4832,27 @@ async function runAiImprove() {
     if (!outputData?.json) { showError('先にプロンプトを生成してください。'); return; }
     const keys = getApiKeys();
     if (keys.length === 0) { showError('APIキーを登録してください。'); return; }
-    const modal     = document.getElementById('ai-improve-modal');
-    const loading   = document.getElementById('ai-improve-loading');
-    const contentEl = document.getElementById('ai-improve-content');
-    const actions   = document.getElementById('ai-improve-actions');
-    const rerunBtn  = document.getElementById('rerun-ai-improve-btn');
-    modal?.classList.add('show');
-    lucide.createIcons();
-    if (loading)   { loading.classList.remove('hidden'); loading.style.display = 'flex'; }
-    if (contentEl)   contentEl.innerHTML = '';
-    if (actions)     actions.classList.add('hidden');
-    if (rerunBtn)    rerunBtn.classList.add('hidden');
-    _aiImproveRawText = '';
-    const qualResult = calcQualityScore(outputData);
-    const lowItems   = qualResult?.details.filter(d => !d.ok).map(d => `・${d.label}（${d.score}/${d.max}点）`).join('\n') || '（なし）';
-    const improvePrompt = `あなたはGrok Imagineプロンプトの専門家です。\n以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きにしてください。\nまた最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。\n\n【現在の入力テキスト】\n${els.promptInput?.value || ''}\n\n【現在のJSON】\n${JSON.stringify(outputData.json, null, 2).slice(0, 1500)}\n\n【スコアが低い項目】\n${lowItems}\n\n出力形式:\n## 改善提案\n- ...（箇条書き3〜5点）\n\n## 改善後の入力テキスト\n（ここに改善後のテキストのみ）`;
+    const modal=document.getElementById('ai-improve-modal'), loading=document.getElementById('ai-improve-loading'),
+          contentEl=document.getElementById('ai-improve-content'), actions=document.getElementById('ai-improve-actions'),
+          rerunBtn=document.getElementById('rerun-ai-improve-btn');
+    modal?.classList.add('show'); lucide.createIcons();
+    if(loading){loading.classList.remove('hidden');loading.style.display='flex';}
+    if(contentEl) contentEl.innerHTML='';
+    if(actions) actions.classList.add('hidden');
+    if(rerunBtn) rerunBtn.classList.add('hidden');
+    _aiImproveRawText='';
+    const qualResult=calcQualityScore(outputData);
+    const lowItems=qualResult?.details.filter(d=>!d.ok).map(d=>`・${d.label}（${d.score}/${d.max}点）`).join('\n')||'（なし）';
+    const improvePrompt=`あなたはGrok Imagineプロンプトの専門家です。\n以下の生成結果と品質スコアを分析して、プロンプトを改善するための具体的な提案を日本語で箇条書きにしてください。\nまた最後に「改善後の入力テキスト（日本語・100文字以内）」を提示してください。\n\n【現在の入力テキスト】\n${els.promptInput?.value||''}\n\n【現在のJSON】\n${JSON.stringify(outputData.json,null,2).slice(0,1500)}\n\n【スコアが低い項目】\n${lowItems}\n\n出力形式:\n## 改善提案\n- ...（箇条書き3〜5点）\n\n## 改善後の入力テキスト\n（ここに改善後のテキストのみ）`;
     try {
-        const responseData = await fetchWithKeyRotation(improvePrompt);
-        const text = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '提案を取得できませんでした。';
-        _aiImproveRawText = text;
-        renderAiImproveContent(text);
-        if (rerunBtn) rerunBtn.classList.remove('hidden');
+        const responseData=await fetchWithKeyRotation(improvePrompt);
+        const text=responseData.candidates?.[0]?.content?.parts?.[0]?.text||'提案を取得できませんでした。';
+        _aiImproveRawText=text; renderAiImproveContent(text);
+        if(rerunBtn) rerunBtn.classList.remove('hidden');
     } catch(e) {
-        if (contentEl) contentEl.innerHTML = `<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`;
+        if(contentEl) contentEl.innerHTML=`<p class="text-xs text-red-400">エラー: ${escapeHtml(e.message)}</p>`;
     } finally {
-        if (loading) { loading.classList.add('hidden'); loading.style.display = 'none'; }
+        if(loading){loading.classList.add('hidden');loading.style.display='none';}
         lucide.createIcons();
     }
 }
@@ -5414,9 +5366,7 @@ document.addEventListener('DOMContentLoaded', init);
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-700 flex-shrink-0">
             <h2 class="font-semibold text-slate-200 flex items-center gap-2 text-sm"><i data-lucide="wand-2" class="w-4 h-4 text-purple-400"></i> AI改善提案</h2>
             <div class="flex items-center gap-2">
-                <button id="rerun-ai-improve-btn" title="AIに再生成を依頼" class="hidden text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors flex items-center gap-1">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> 再生成
-                </button>
+                <button id="rerun-ai-improve-btn" class="hidden text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3 h-3"></i> 再生成</button>
                 <button id="close-ai-improve-btn" class="text-slate-500 hover:text-slate-300"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
         </div>
