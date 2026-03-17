@@ -991,7 +991,17 @@
                 </div>
             </div>
 
-        <!-- 履歴パネル -->
+        
+        <!-- MD出力ボタン -->
+        <div class="flex justify-end px-1">
+            <button id="export-markdown-btn" title="Markdownレポートをダウンロード"
+                class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
+                <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
+                <span>MD出力</span>
+            </button>
+        </div>
+
+<!-- 履歴パネル -->
         <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl overflow-hidden">
             <div class="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
                 <h3 class="font-medium text-slate-300 flex items-center gap-2 text-sm">
@@ -1152,10 +1162,7 @@
                     <i data-lucide="copy" class="w-3.5 h-3.5" id="copy-json-icon"></i>
                     <span id="copy-json-text" class="hidden sm:inline">コピー</span>
                 </button>
-                <button id="export-markdown-btn" title="Markdownレポートをダウンロード" class="text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 px-2.5 py-1.5 rounded transition-colors flex items-center gap-1.5 text-xs font-medium">
-                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i>
-                    <span class="hidden sm:inline">MD出力</span>
-                </button>
+                
             </div>
             <div class="p-4 overflow-auto relative flex-grow min-h-[400px]">
                 <pre><code id="json-output" class="font-mono text-sm leading-relaxed block text-slate-300"></code></pre>
